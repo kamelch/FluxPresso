@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaggia Mod Wiring Map - Interactive Guide</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --panel-bg: #ffffff;
+            --text-main: #333333;
+            --text-sub: #666666;
+            --border-color: #ddd;
+            --accent-color: #2196F3;
+            --danger-color: #d32f2f;
+            --wire-off-opacity: 0.12;
+            --component-fill: #ffffff;
+            --component-stroke: #333;
+            --tooltip-bg: rgba(0, 0, 0, 0.95);
+            --tooltip-text: #fff;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1e1e1e;
+            --panel-bg: #2d2d2d;
+            --text-main: #e0e0e0;
+            --text-sub: #aaaaaa;
+            --border-color: #444;
+            --component-fill: #333;
+            --component-stroke: #888;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s;
+        }
+
+        header {
+            padding: 12px 20px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
+
+        h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+        .subtitle { font-size: 0.8rem; color: var(--text-sub); margin-left: 10px; font-weight: normal; }
+
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .controls {
+            width: 250px;
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
+
+        .control-group {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+        }
+
+        .control-group h3 {
+            margin-top: 0;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .toggle-row:last-child { margin-bottom: 0; }
+        .toggle-row input { margin-right: 10px; accent-color: var(--accent-color); }
+
+        .legend-marker {
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            margin-right: 8px;
+            border-radius: 50%;
+        }
+
+        button {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+            width: 100%;
+            font-weight: 500;
+        }
+
+        button:hover { background-color: var(--border-color); }
+        button.primary { background-color: var(--accent-color); color: white; border: none; }
+        button.primary:hover { opacity: 0.9; }
+        button.danger { color: var(--danger-color); border-color: var(--danger-color); background: transparent; }
+        button.danger:hover { background: rgba(211, 47, 47, 0.1); }
+
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            background-image: 
+                linear-gradient(var(--border-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: -1px -1px;
+            overflow: auto;
+            cursor: grab;
+        }
+        
+        .canvas-wrapper:active { cursor: grabbing; }
+
+        svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-width: 1300px;
+            min-height: 1000px;
+        }
+
+        /* Component Styles */
+        .comp-body { fill: var(--component-fill); stroke: var(--component-stroke); stroke-width: 2; }
+        .comp-header { font-size: 13px; font-weight: bold; fill: var(--text-main); text-anchor: middle; pointer-events: none; }
+        .comp-sub { font-size: 10px; fill: var(--text-sub); text-anchor: middle; pointer-events: none; }
+        .pin-txt { font-size: 9px; fill: var(--text-sub); pointer-events: none; }
+        .hub-zone { fill: rgba(33, 150, 243, 0.08); stroke: #2196F3; stroke-width: 1.5; stroke-dasharray: 6; }
+        
+        /* Wires */
+        .wire {
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: var(--wire-off-opacity);
+            transition: opacity 0.3s, stroke-width 0.2s;
+            cursor: help; /* Changed to indicate help available */
+        }
+
+        .wire.visible { opacity: 0.8; }
+        .wire.visible:hover { stroke-width: 6; opacity: 1; stroke: #000; }
+        [data-theme="dark"] .wire.visible:hover { stroke: #fff; }
+
+        .wire-mains { stroke-width: 4; }
+        .wire.active-anim { 
+            opacity: 1; 
+            stroke-dasharray: 10, 6; 
+            animation: flow 0.8s linear infinite; 
+        }
+
+        /* Bus Colors */
+        .bus-5v { stroke: #e91e63; }
+        .bus-3v3 { stroke: #ff9800; }
+        .bus-gnd { stroke: #455a64; }
+        .bus-sig { stroke: #2196F3; }
+        .bus-mains-L { stroke: #d32f2f; } /* Live */
+        .bus-mains-N { stroke: #1976D2; } /* Neutral */
+        .bus-mains-PE { stroke: #388E3C; stroke-dasharray: 4,2; } /* Earth */
+
+        @keyframes flow { to { stroke-dashoffset: -16; } }
+
+        /* Zones */
+        .zone-label {
+            font-size: 16px;
+            font-weight: bold;
+            fill: var(--text-sub);
+            opacity: 0.2;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        .zone-divider {
+            stroke: var(--border-color);
+            stroke-width: 2;
+            stroke-dasharray: 10, 5;
+        }
+
+        /* Tooltip */
+        #tooltip {
+            position: fixed;
+            background: var(--tooltip-bg);
+            color: var(--tooltip-text);
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border-left: 4px solid var(--accent-color);
+            transform: translate(15px, 15px);
+            white-space: nowrap;
+        }
+        #tooltip strong { display: block; margin-bottom: 4px; font-size: 0.95rem; }
+        #tooltip span { display: block; font-size: 0.8rem; opacity: 0.8; margin-bottom: 2px; }
+        #tooltip .hint { font-size: 0.7rem; color: #4fc3f7; margin-top: 4px; font-weight: bold; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            backdrop-filter: blur(2px);
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        
+        .modal-content {
+            background: var(--panel-bg);
+            color: var(--text-main);
+            width: 90%;
+            max-width: 450px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            padding: 25px;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.2s;
+        }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
+
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .modal-title { font-size: 1.2rem; font-weight: bold; color: var(--accent-color); margin: 0; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-sub); padding: 0; margin: 0; width: auto; }
+        .modal-body { font-size: 0.95rem; line-height: 1.5; }
+        .modal-step { margin-bottom: 10px; display: flex; }
+        .step-num { font-weight: bold; color: var(--accent-color); margin-right: 10px; min-width: 20px; }
+
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .controls { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <h1>Gaggia Mod Wiring</h1>
+        <span class="subtitle">Click any wire for a connection guide</span>
+    </div>
+    <button id="themeToggle" style="width:auto; margin:0;">Dark Mode</button>
+</header>
+
+<div class="container">
+    <aside class="controls">
+        <div class="control-group">
+            <h3>New Harnesses</h3>
+            <label class="toggle-row">
+                <input type="checkbox" class="harness-toggle" data-target="h-pwr" checked>
+                <span class="legend-marker" style="background:#e91e63"></span> 5V Power
+            </label>
+            <label class="toggle-row">
+                <input type="checkbox" class="harness-toggle" data-target="h-io" checked>
+                <span class="legend-marker" style="background:#2196F3"></span> Signal Lines
+            </label>
+            <label class="toggle-row">
+                <input type="checkbox" class="harness-toggle" data-target="h-sensors" checked>
+                <span class="legend-marker" style="background:#9c27b0"></span> Sensors (TC/Scale)
+            </label>
+            <label class="toggle-row">
+                <input type="checkbox" class="harness-toggle" data-target="h-mains">
+                <span class="legend-marker" style="background:#d32f2f"></span> New Mains Wires ⚠️
+            </label>
+        </div>
+
+        <div class="control-group">
+            <h3>Layout Notes</h3>
+            <div style="font-size:0.8rem; color:var(--text-sub);">
+                <strong>Expansion Hub:</strong> Contains MAX31855 & HX711.<br>
+                <strong>Mains Tap:</strong> Piggyback on Main Switch Output.<br>
+                <strong>Isolation:</strong> HV Top-Right, LV Bottom-Left.<br>
+                <strong>Interactive:</strong> Click wires for steps.
+            </div>
+        </div>
+
+        <button class="primary" id="btnPlay">▶ Visualize Path</button>
+        <button class="danger" id="btnStop" style="display:none;">■ Stop</button>
+    </aside>
+
+    <div class="canvas-wrapper" id="canvasContainer">
+        <svg viewBox="0 0 1300 1000" id="circuitSvg">
+            <!-- Background Grid/Zones -->
+            <line x1="0" y1="450" x2="1300" y2="450" class="zone-divider" />
+            <text x="50" y="440" class="zone-label">High Voltage (Mains Taps & SSR)</text>
+            <text x="50" y="480" class="zone-label">Low Voltage (ESP32 & DC Hub)</text>
+
+            <!-- ===================== COMPONENTS ===================== -->
+
+            <!-- 1. GAGGIA MAIN SWITCH (The Source) -->
+            <g transform="translate(100, 150)">
+                <rect class="comp-body" width="100" height="120" rx="4" stroke-width="3" />
+                <text x="50" y="30" class="comp-header">Gaggia Switch</text>
+                <text x="50" y="45" class="comp-sub">Back View</text>
+                <text x="50" y="110" class="comp-sub" fill="#d32f2f">EXISTING</text>
+                
+                <!-- Output Terminals (We tap here) -->
+                <rect x="95" y="40" width="10" height="10" fill="#d32f2f"/> <text x="85" y="50" text-anchor="end" class="pin-txt">L Out</text>
+                <rect x="95" y="80" width="10" height="10" fill="#1976D2"/> <text x="85" y="90" text-anchor="end" class="pin-txt">N Out</text>
+            </g>
+
+            <!-- 2. PSU (Power Supply) -->
+            <g transform="translate(350, 50)">
+                <rect class="comp-body" width="120" height="90" rx="4" />
+                <text x="60" y="25" class="comp-header">PSU</text>
+                <text x="60" y="40" class="comp-sub">MeanWell RS-15-5</text>
+                <!-- AC Input -->
+                <circle cx="10" cy="60" r="4" fill="#d32f2f"/> <text x="20" y="65" class="pin-txt">AC L</text>
+                <circle cx="10" cy="80" r="4" fill="#1976D2"/> <text x="20" y="85" class="pin-txt">AC N</text>
+                <!-- DC Output -->
+                <circle cx="110" cy="60" r="4"/> <text x="100" y="65" text-anchor="end" class="pin-txt">+5V</text>
+                <circle cx="110" cy="80" r="4"/> <text x="100" y="85" text-anchor="end" class="pin-txt">GND</text>
+            </g>
+
+            <!-- 3. SHELLY 1 MINI G3 (Safety Gate) -->
+            <g transform="translate(350, 250)">
+                <rect class="comp-body" width="120" height="100" rx="8" stroke="#2196F3" stroke-width="3"/>
+                <text x="60" y="30" class="comp-header">Shelly 1 Mini</text>
+                <text x="60" y="45" class="comp-sub">Safety Relay</text>
+                
+                <circle cx="10" cy="40" r="4"/> <text x="20" y="45" class="pin-txt">Sw (I)</text>
+                <circle cx="10" cy="60" r="4" fill="#d32f2f"/> <text x="20" y="65" class="pin-txt">L In</text>
+                <circle cx="10" cy="80" r="4" fill="#1976D2"/> <text x="20" y="85" class="pin-txt">N In</text>
+                
+                <rect x="115" y="35" width="10" height="10" fill="#d32f2f"/> <text x="110" y="45" text-anchor="end" class="pin-txt">L Out (O)</text>
+            </g>
+
+            <!-- 4. AC LOADS (SSR & DIMMER) -->
+            <g transform="translate(600, 50)">
+                <!-- SSR -->
+                <g>
+                    <rect class="comp-body" width="100" height="100" rx="4"/>
+                    <text x="50" y="30" class="comp-header">SSR</text>
+                    <text x="50" y="45" class="comp-sub">Boiler Control</text>
+                    <circle cx="10" cy="70" r="4" fill="#d32f2f"/> <text x="20" y="75" class="pin-txt">L In</text>
+                    <rect x="95" y="70" width="10" height="10" fill="#d32f2f"/> <text x="90" y="75" text-anchor="end" class="pin-txt">To Boiler</text>
+                    <!-- DC Side -->
+                    <circle cx="30" cy="100" r="3"/> <text x="30" y="90" text-anchor="middle" class="pin-txt">DC+</text>
+                    <circle cx="70" cy="100" r="3"/> <text x="70" y="90" text-anchor="middle" class="pin-txt">DC-</text>
+                </g>
+
+                <!-- Dimmer -->
+                <g transform="translate(0, 200)">
+                    <rect class="comp-body" width="100" height="100" rx="4"/>
+                    <text x="50" y="30" class="comp-header">Dimmer</text>
+                    <text x="50" y="45" class="comp-sub">Pump Control</text>
+                    <circle cx="10" cy="60" r="4" fill="#d32f2f"/> <text x="20" y="65" class="pin-txt">L In</text>
+                    <circle cx="10" cy="80" r="4" fill="#1976D2"/> <text x="20" y="85" class="pin-txt">N In</text>
+                    <rect x="95" y="60" width="10" height="10" fill="#d32f2f"/> <text x="90" y="65" text-anchor="end" class="pin-txt">To Pump</text>
+                    <!-- Logic Side -->
+                    <circle cx="20" cy="100" r="3"/> <text x="20" y="90" class="pin-txt" text-anchor="middle">VCC</text>
+                    <circle cx="40" cy="100" r="3"/> <text x="40" y="90" class="pin-txt" text-anchor="middle">GND</text>
+                    <circle cx="60" cy="100" r="3"/> <text x="60" y="90" class="pin-txt" text-anchor="middle">ZC</text>
+                    <circle cx="80" cy="100" r="3"/> <text x="80" y="90" class="pin-txt" text-anchor="middle">PSM</text>
+                </g>
+            </g>
+
+            <!-- 5. EXISTING HARDWARE (Destinations) -->
+            <g transform="translate(850, 50)">
+                 <rect class="comp-body" width="100" height="80" rx="2" style="stroke-dasharray:4"/>
+                 <text x="50" y="40" class="comp-header">Boiler</text>
+                 <circle cx="10" cy="70" r="4"/> <text x="20" y="75" class="pin-txt">Live Terminal</text>
+            </g>
+            <g transform="translate(850, 250)">
+                 <rect class="comp-body" width="100" height="80" rx="2" style="stroke-dasharray:4"/>
+                 <text x="50" y="40" class="comp-header">Pump</text>
+                 <circle cx="10" cy="60" r="4"/> <text x="20" y="65" class="pin-txt">Live Terminal</text>
+            </g>
+
+
+            <!-- 6. EXPANSION HUB (Bottom Right) -->
+            <g transform="translate(600, 550)">
+                <rect class="hub-zone" width="450" height="250" rx="10" />
+                <text x="225" y="30" class="comp-header" fill="#2196F3">EXPANSION HUB PCB</text>
+                
+                <!-- Terminal Block on Hub -->
+                <g transform="translate(20, 60)">
+                    <rect class="comp-body" width="60" height="150" rx="2" />
+                    <text x="30" y="20" class="comp-sub" text-anchor="middle">Power</text>
+                    <circle cx="10" cy="40" r="3"/> <text x="20" y="45" class="pin-txt">5V In</text>
+                    <circle cx="10" cy="60" r="3"/> <text x="20" y="65" class="pin-txt">GND In</text>
+                    <circle cx="10" cy="90" r="3"/> <text x="20" y="95" class="pin-txt">5V Out</text>
+                    <circle cx="10" cy="110" r="3"/> <text x="20" y="115" class="pin-txt">GND Out</text>
+                </g>
+
+                <!-- MAX31855 (Inside Hub) -->
+                <g transform="translate(150, 60)">
+                    <rect class="comp-body" width="100" height="80" rx="4"/>
+                    <text x="50" y="25" class="comp-header">MAX31855</text>
+                    <circle cx="0" cy="40" r="3"/> <text x="10" y="45" class="pin-txt">CS</text>
+                    <circle cx="0" cy="50" r="3"/> <text x="10" y="55" class="pin-txt">DO</text>
+                    <circle cx="0" cy="60" r="3"/> <text x="10" y="65" class="pin-txt">SCK</text>
+                    <!-- TC Connector -->
+                    <rect x="90" y="30" width="10" height="20" fill="#9c27b0"/>
+                </g>
+
+                <!-- HX711 (Inside Hub) -->
+                <g transform="translate(150, 160)">
+                    <rect class="comp-body" width="100" height="80" rx="4"/>
+                    <text x="50" y="25" class="comp-header">HX711</text>
+                    <circle cx="0" cy="40" r="3"/> <text x="10" y="45" class="pin-txt">DT</text>
+                    <circle cx="0" cy="50" r="3"/> <text x="10" y="55" class="pin-txt">SCK</text>
+                    <!-- Scale Connector -->
+                    <rect x="90" y="30" width="10" height="20" fill="#9c27b0"/>
+                </g>
+            </g>
+
+
+            <!-- 7. ESP32 (Bottom Left) -->
+            <g transform="translate(50, 550)">
+                <rect class="comp-body" width="200" height="300" rx="10"/>
+                <text x="100" y="30" class="comp-header">ESP32-S3</text>
+                
+                <!-- 4P Power -->
+                <g transform="translate(200, 50)">
+                    <text x="-10" y="0" text-anchor="end" font-weight="bold" font-size="11">PWR</text>
+                    <circle cx="0" cy="10" r="3" fill="#e91e63"/>
+                    <circle cx="0" cy="20" r="3" fill="#455a64"/>
+                </g>
+
+                <!-- 8P IO -->
+                <g transform="translate(200, 110)">
+                    <text x="-10" y="0" text-anchor="end" font-weight="bold" font-size="11">IO (8P)</text>
+                    <circle cx="0" cy="10" r="3"/> <text x="-10" y="13" text-anchor="end" class="pin-txt">CS</text>
+                    <circle cx="0" cy="20" r="3"/> <text x="-10" y="23" text-anchor="end" class="pin-txt">DO</text>
+                    <circle cx="0" cy="30" r="3"/> <text x="-10" y="33" text-anchor="end" class="pin-txt">SCK</text>
+                    <circle cx="0" cy="40" r="3"/> <text x="-10" y="43" text-anchor="end" class="pin-txt">PSM</text>
+                    <circle cx="0" cy="50" r="3"/> <text x="-10" y="53" text-anchor="end" class="pin-txt">SSR</text>
+                    <circle cx="0" cy="60" r="3"/> <text x="-10" y="63" text-anchor="end" class="pin-txt">ZC</text>
+                </g>
+
+                <!-- 4P Scale -->
+                <g transform="translate(200, 230)">
+                    <text x="-10" y="0" text-anchor="end" font-weight="bold" font-size="11">Scale</text>
+                    <circle cx="0" cy="10" r="3"/> <text x="-10" y="13" text-anchor="end" class="pin-txt">DT</text>
+                    <circle cx="0" cy="20" r="3"/> <text x="-10" y="23" text-anchor="end" class="pin-txt">SCK</text>
+                </g>
+            </g>
+
+            <!-- ===================== WIRING (MANHATTAN STYLE) ===================== -->
+
+            <!-- MAINS (High Voltage) - Strict Non-Overlap -->
+            <g class="harness h-mains">
+                <!-- 1. PIGGYBACKS FROM MAIN SWITCH -->
+                <!-- Live to PSU -->
+                <path d="M 210 190 L 250 190 L 250 110 L 340 110" class="wire bus-mains-L wire-mains" data-connector="Piggyback Spade" data-info="Piggyback: Switch L -> PSU L"/>
+                <!-- Neutral to PSU -->
+                <path d="M 210 230 L 260 230 L 260 130 L 340 130" class="wire bus-mains-N wire-mains" data-connector="Piggyback Spade" data-info="Piggyback: Switch N -> PSU N"/>
+
+                <!-- Live to Shelly -->
+                <path d="M 210 190 L 250 190 L 250 290 L 340 290" class="wire bus-mains-L wire-mains" data-connector="Piggyback Spade" data-info="Piggyback: Switch L -> Shelly L (Power)"/>
+                <!-- Jumper L to Shelly I -->
+                <path d="M 330 290 L 330 270 L 340 270" class="wire bus-mains-L wire-mains" data-connector="Short Wire Jumper" data-info="Jumper: Shelly L -> Shelly I"/>
+                
+                <!-- Neutral to Shelly -->
+                <path d="M 210 230 L 260 230 L 260 330 L 340 330" class="wire bus-mains-N wire-mains" data-connector="Piggyback Spade" data-info="Piggyback: Switch N -> Shelly N"/>
+
+                <!-- 2. SHELLY OUTPUT TO CONTROLLERS -->
+                <path d="M 480 290 L 520 290 L 520 120 L 590 120" class="wire bus-mains-L wire-mains" data-connector="Screw Terminal" data-info="Shelly Out -> SSR Input (Gated L)"/>
+                <path d="M 480 290 L 520 290 L 520 260 L 590 260" class="wire bus-mains-L wire-mains" data-connector="Screw Terminal" data-info="Shelly Out -> Dimmer Input (Gated L)"/>
+
+                <!-- 3. NEUTRAL TO DIMMER (Dimmer needs N, SSR does not) -->
+                <path d="M 330 130 L 290 130 L 290 400 L 550 400 L 550 280 L 590 280" class="wire bus-mains-N wire-mains" data-connector="Screw Terminal" data-info="Neutral -> Dimmer N"/>
+
+                <!-- 4. CONTROLLER OUTPUTS TO HARDWARE -->
+                <path d="M 710 120 L 840 120" class="wire bus-mains-L wire-mains" style="stroke:#d32f2f" data-connector="Spade Connector" data-info="SSR Load -> Boiler Live (Replaces Stock)"/>
+                <path d="M 710 260 L 840 260" class="wire bus-mains-L wire-mains" style="stroke:#d32f2f" data-connector="Spade Connector" data-info="Dimmer Load -> Pump Live (Replaces Stock)"/>
+            </g>
+
+            <!-- LOW VOLTAGE DC POWER -->
+            <g class="harness h-pwr">
+                <!-- PSU to Hub Terminal -->
+                <path d="M 480 110 L 500 110 L 500 500 L 600 500 L 600 650 L 620 650" class="wire bus-5v" data-connector="Screw Terminal / Ferrule" data-info="5V PSU -> Hub In"/>
+                <path d="M 480 130 L 510 130 L 510 510 L 610 510 L 610 670 L 620 670" class="wire bus-gnd" data-connector="Screw Terminal / Ferrule" data-info="GND PSU -> Hub In"/>
+
+                <!-- Hub Out to ESP32 -->
+                <path d="M 620 700 L 550 700 L 550 600 L 260 600" class="wire bus-5v" data-connector="JST-1.25 4P" data-info="Hub 5V -> ESP32 5V"/>
+                <path d="M 620 720 L 560 720 L 560 610 L 260 610" class="wire bus-gnd" data-connector="JST-1.25 4P" data-info="Hub GND -> ESP32 GND"/>
+                
+                <!-- NEW: DIMMER VCC (Required for logic) -->
+                <path d="M 620 650 L 630 650 L 630 300 L 620 300" class="wire bus-5v" data-connector="Dupont / Header" data-info="5V -> Dimmer VCC"/>
+            </g>
+
+            <!-- SIGNALS (Manhattan Routing) -->
+            <g class="harness h-io">
+                <!-- SSR Control -->
+                <path d="M 260 700 L 400 700 L 400 420 L 630 420 L 630 150" class="wire bus-sig" data-connector="Screw Terminal" data-info="ESP SSR -> SSR DC+"/>
+                <path d="M 260 610 L 280 610 L 280 750 L 570 750 L 570 430 L 670 430 L 670 150" class="wire bus-gnd" data-connector="Screw Terminal" data-info="GND -> SSR DC-"/>
+
+                <!-- Dimmer Signals -->
+                <path d="M 260 690 L 390 690 L 390 350 L 680 350 L 680 300" class="wire bus-sig" data-connector="Dupont / Header" data-info="ESP PSM -> Dimmer PSM"/>
+                <path d="M 260 710 L 410 710 L 410 340 L 660 340 L 660 300" class="wire bus-sig" data-connector="Dupont / Header" data-info="ESP ZC -> Dimmer ZC"/>
+                <path d="M 260 610 L 280 610 L 280 750 L 570 750 L 570 330 L 640 330 L 640 300" class="wire bus-gnd" data-connector="Dupont / Header" data-info="GND -> Dimmer GND"/>
+
+                <!-- Hub Signals (Temp & Scale) -->
+                <!-- CS -->
+                <path d="M 260 660 L 450 660 L 450 640 L 740 640" class="wire bus-sig" data-connector="JST 8P" data-info="ESP CS -> MAX CS"/>
+                <!-- DO (MISO) -->
+                <path d="M 260 670 L 440 670 L 440 650 L 740 650" class="wire bus-sig" data-connector="JST 8P" data-info="ESP DO -> MAX DO"/>
+                <!-- SCK (Shared?) -->
+                <path d="M 260 680 L 430 680 L 430 660 L 740 660" class="wire bus-sig" data-connector="JST 8P" data-info="ESP SCK -> MAX SCK"/>
+
+                <!-- Scale DT -->
+                <path d="M 260 780 L 420 780 L 420 750 L 740 750" class="wire bus-sig" data-connector="JST 4P" data-info="ESP DT -> HX711 DT"/>
+                <!-- Scale SCK -->
+                <path d="M 260 790 L 430 790 L 430 760 L 740 760" class="wire bus-sig" data-connector="JST 4P" data-info="ESP SCK -> HX711 SCK"/>
+            </g>
+
+            <!-- SENSORS -->
+            <g class="harness h-sensors">
+                <path d="M 860 630 L 950 630" class="wire bus-sig" style="stroke:#9c27b0; stroke-width:4" data-connector="Screw Terminal" data-info="Thermocouple Probe"/>
+                <path d="M 860 740 L 950 740" class="wire bus-sig" style="stroke:#9c27b0; stroke-width:4" data-connector="Soldered / Terminal" data-info="Load Cell Wires"/>
+            </g>
+
+        </svg>
+
+        <div id="tooltip">
+            <strong id="tt-title"></strong>
+            <span id="tt-conn"></span>
+            <div class="hint">(Click for Guide)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Overlay -->
+<div class="modal-overlay" id="guideModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="mTitle">Guide</h2>
+            <button class="modal-close" id="mClose">×</button>
+        </div>
+        <div class="modal-body" id="mBody">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+</div>
+
+<script>
+    const state = { active: ['h-pwr', 'h-io', 'h-sensors', 'h-mains'], animating: false, timer: null };
+    const tooltip = document.getElementById('tooltip');
+    const ttTitle = document.getElementById('tt-title');
+    const ttConn = document.getElementById('tt-conn');
+    const toggles = document.querySelectorAll('.harness-toggle');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnStop = document.getElementById('btnStop');
+    
+    // Modal Elements
+    const modal = document.getElementById('guideModal');
+    const mTitle = document.getElementById('mTitle');
+    const mBody = document.getElementById('mBody');
+    const mClose = document.getElementById('mClose');
+
+    // Guide Database
+    const guides = {
+        'mains_piggyback': {
+            title: "Mains Switch Piggyback",
+            steps: [
+                "Unplug the espresso machine from the wall.",
+                "Locate the main power switch on the back/side.",
+                "Identify the existing output spade terminal (usually carrying a wire to the boiler).",
+                "Remove the existing wire.",
+                "Crimp a 'Piggyback Spade' (2-in-1 adapter) onto your NEW wire (leading to the PSU/Shelly).",
+                "Push the Piggyback onto the switch terminal.",
+                "Reconnect the original stock wire onto the Piggyback's tab."
+            ]
+        },
+        'screw_terminal_hv': {
+            title: "High Voltage Screw Terminal",
+            steps: [
+                "Strip about 6-7mm of insulation from the wire.",
+                "Twist the copper strands tightly to prevent fraying.",
+                "Loosen the terminal screw on the component (PSU/Shelly/SSR).",
+                "Insert the wire fully. Ensure NO bare copper is visible outside the housing.",
+                "Tighten the screw firmly.",
+                "Perform a 'tug test': Pull gently on the wire to ensure it doesn't come loose."
+            ]
+        },
+        'spade_connector': {
+            title: "Spade (Faston) Connector",
+            steps: [
+                "Strip the wire end.",
+                "Insert into a 6.3mm Insulated Spade Connector.",
+                "Crimp firmly using a ratcheting crimp tool.",
+                "Push the connector onto the component tab (SSR/Pump/Boiler) until it seats securely.",
+                "Ensure the insulation sleeve covers the metal connection completely."
+            ]
+        },
+        'jst_connector': {
+            title: "JST-1.25 Micro Connector",
+            steps: [
+                "These connectors are very small and fragile.",
+                "It is highly recommended to use pre-crimped pigtails and solder them to your wires.",
+                "If crimping: Use a specialized micro-crimping tool.",
+                "Verify Polarity: Check your ESP32 board pinout. Red is usually 5V, Black is GND.",
+                "Align the connector carefully and push until it clicks. Do NOT force it."
+            ]
+        },
+        'screw_terminal_lv': {
+            title: "Low Voltage Terminal (Ferrule)",
+            steps: [
+                "Strip 5mm of insulation.",
+                "Recommended: Crimp a wire ferrule onto the end for a clean connection.",
+                "Insert into the PCB terminal block.",
+                "Tighten the screw.",
+                "Ensure no stray wire strands are touching adjacent terminals (this causes shorts!)."
+            ]
+        },
+        'dupont_header': {
+            title: "Dupont / Pin Header",
+            steps: [
+                "Use Female Dupont jumper wires.",
+                "Slide the connector onto the pin header.",
+                "If the connection feels loose, secure it with a small dab of hot glue or electrical tape to prevent vibration from shaking it loose."
+            ]
+        }
+    };
+
+    function getGuideKey(wire) {
+        const connector = (wire.getAttribute('data-connector') || "").toLowerCase();
+        const isMains = wire.classList.contains('wire-mains') || wire.closest('.h-mains');
+
+        if (connector.includes('piggyback')) return 'mains_piggyback';
+        if (connector.includes('jst')) return 'jst_connector';
+        if (connector.includes('spade')) return 'spade_connector';
+        if (connector.includes('dupont') || connector.includes('header')) return 'dupont_header';
+        
+        if (isMains) return 'screw_terminal_hv';
+        return 'screw_terminal_lv'; // Default for DC
+    }
+
+    function openModal(wire) {
+        const key = getGuideKey(wire);
+        const guide = guides[key];
+
+        if (!guide) return;
+
+        mTitle.textContent = guide.title;
+        mBody.innerHTML = guide.steps.map((step, i) => 
+            `<div class="modal-step"><span class="step-num">${i+1}.</span><span>${step}</span></div>`
+        ).join('');
+        
+        modal.classList.add('open');
+    }
+
+    function closeModal() {
+        modal.classList.remove('open');
+    }
+
+    function init() {
+        toggles.forEach(t => t.addEventListener('change', updateVisibility));
+        
+        document.querySelectorAll('.wire').forEach(w => {
+            // Hover Tooltip
+            w.addEventListener('mouseenter', e => {
+                ttTitle.textContent = w.getAttribute('data-info');
+                ttConn.textContent = w.getAttribute('data-connector') || 'Direct Connection';
+                tooltip.style.opacity = 1;
+                moveTooltip(e);
+            });
+            w.addEventListener('mousemove', moveTooltip);
+            w.addEventListener('mouseleave', () => tooltip.style.opacity = 0);
+            
+            // Click Modal
+            w.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openModal(w);
+            });
+        });
+
+        // Modal Events
+        mClose.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Theme
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        });
+
+        btnPlay.addEventListener('click', playSequence);
+        btnStop.addEventListener('click', stopSequence);
+        updateVisibility();
+    }
+
+    function moveTooltip(e) {
+        let x = e.clientX + 15, y = e.clientY + 15;
+        if (x > window.innerWidth - 200) x = e.clientX - 210;
+        if (y > window.innerHeight - 80) y = e.clientY - 90;
+        tooltip.style.left = x + 'px';
+        tooltip.style.top = y + 'px';
+    }
+
+    function updateVisibility() {
+        const active = Array.from(toggles).filter(t => t.checked).map(t => t.dataset.target);
+        document.querySelectorAll('.harness').forEach(h => {
+            const isVisible = active.some(c => h.classList.contains(c));
+            h.querySelectorAll('.wire').forEach(w => {
+                if(isVisible) w.classList.add('visible');
+                else w.classList.remove('visible');
+            });
+        });
+    }
+
+    window.setAll = (val) => {
+        toggles.forEach(t => { t.checked = val; });
+        updateVisibility();
+    }
+
+    function playSequence() {
+        if(state.animating) return;
+        state.animating = true;
+        btnPlay.style.display = 'none';
+        btnStop.style.display = 'inline-block';
+        setAll(false);
+        
+        const sequence = ['h-mains', 'h-pwr', 'h-io', 'h-sensors'];
+        let idx = 0;
+
+        const run = () => {
+            if(idx >= sequence.length) { stopSequence(); return; }
+            const cls = sequence[idx];
+            const check = document.querySelector(`.harness-toggle[data-target="${cls}"]`);
+            if(check) { check.checked = true; updateVisibility(); }
+            document.querySelectorAll(`.${cls} .wire`).forEach(w => w.classList.add('active-anim'));
+            idx++;
+        };
+        run();
+        state.timer = setInterval(run, 1500);
+    }
+
+    function stopSequence() {
+        state.animating = false;
+        clearInterval(state.timer);
+        btnPlay.style.display = 'inline-block';
+        btnStop.style.display = 'none';
+        document.querySelectorAll('.active-anim').forEach(w => w.classList.remove('active-anim'));
+        setAll(true);
+    }
+
+    init();
+</script>
+</body>
+</html>
