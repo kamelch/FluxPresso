@@ -1,1565 +1,783 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
- <meta charset="UTF-8" />
- <meta name="viewport" content="width=device-width, initial-scale=1.0" />
- <title>Gaggia Mod V20 - Enhanced Interactive Diagram</title>
- <style>
- /* =========================
- THEME / RESET
- ========================= */
- :root {
- --bg: #f7f8fb;
- --panel: #ffffff;
- --text: #111827;
- --sub: #6b7280;
- --border: #e5e7eb;
- --accent: #2563eb;
- --danger: #dc2626;
- --success: #16a34a;
- --shadow: 0 12px 30px rgba(0,0,0,.10);
- --shadow2: 0 6px 18px rgba(0,0,0,.10);
- --wire-off: 0.10;
- --wire-base: 0.30;
- --wire-on: 0.92;
- --radius: 16px;
- --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
- --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
- }
- html[data-theme="dark"] {
- --bg: #0b1020;
- --panel: #111827;
- --text: #f9fafb;
- --sub: #9ca3af;
- --border: #243041;
- --shadow: 0 12px 30px rgba(0,0,0,.45);
- --shadow2: 0 6px 18px rgba(0,0,0,.40);
- --wire-off: 0.08;
- --wire-base: 0.26;
- --wire-on: 0.95;
- }
- * { box-sizing: border-box; }
- body {
- margin: 0;
- font-family: var(--sans);
- background: var(--bg);
- color: var(--text);
- height: 100vh;
- overflow: hidden;
- }
- button, input { font-family: inherit; }
- kbd {
- font-family: var(--mono);
- font-size: .8em;
- padding: 2px 6px;
- border-radius: 8px;
- border: 1px solid var(--border);
- background: rgba(255,255,255,.6);
- }
- html[data-theme="dark"] kbd { background: rgba(17,24,39,.9); }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaggia Mod Wiring Map - Interactive Guide</title>
+    <style>
+        :root {
+            --bg-color: #f4f4f9;
+            --panel-bg: #ffffff;
+            --text-main: #333333;
+            --text-sub: #666666;
+            --border-color: #ddd;
+            --accent-color: #2196F3;
+            --danger-color: #d32f2f;
+            --wire-off-opacity: 0.12;
+            --component-fill: #ffffff;
+            --component-stroke: #333;
+            --tooltip-bg: rgba(0, 0, 0, 0.95);
+            --tooltip-text: #fff;
+        }
 
- /* =========================
- LAYOUT
- ========================= */
- header {
- position: relative;
- z-index: 10;
- display: flex;
- gap: 18px;
- justify-content: space-between;
- align-items: center;
- padding: 12px 18px;
- border-bottom: 1px solid var(--border);
- background: var(--panel);
- }
- h1 {
- margin: 0;
- font-size: 1.05rem;
- line-height: 1.2;
- letter-spacing: .2px;
- }
- .badge {
- display: inline-flex;
- align-items: center;
- gap: 6px;
- margin-left: 8px;
- padding: 3px 10px;
- border-radius: 999px;
- font-size: .75rem;
- font-weight: 800;
- color: #fff;
- background: linear-gradient(90deg, var(--success), var(--accent));
- vertical-align: middle;
- white-space: nowrap;
- }
- .subline { margin-top: 2px; color: var(--sub); font-size: .85rem; }
- .btnbar { display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
- button {
- border: 1px solid var(--border);
- background: var(--panel);
- color: var(--text);
- padding: 8px 12px;
- border-radius: 12px;
- cursor: pointer;
- box-shadow: 0 1px 0 rgba(0,0,0,.03);
- transition: transform .06s ease, background .15s ease, border-color .15s ease;
- }
- button:hover { background: rgba(37,99,235,.07); border-color: rgba(37,99,235,.35); }
- button:active { transform: translateY(1px); }
- button.primary { background: var(--accent); color: white; border-color: transparent; }
- button.primary:hover { background: #1d4ed8; }
+        [data-theme="dark"] {
+            --bg-color: #1e1e1e;
+            --panel-bg: #2d2d2d;
+            --text-main: #e0e0e0;
+            --text-sub: #aaaaaa;
+            --border-color: #444;
+            --component-fill: #333;
+            --component-stroke: #888;
+        }
 
- .container { display:flex; height: calc(100vh - 58px); overflow:hidden; }
- aside.controls {
- width: 320px;
- flex-shrink: 0;
- padding: 14px;
- border-right: 1px solid var(--border);
- background: var(--panel);
- overflow: auto;
- }
- .section {
- border: 1px solid var(--border);
- border-radius: var(--radius);
- padding: 12px 12px 10px;
- margin-bottom: 12px;
- box-shadow: 0 1px 0 rgba(0,0,0,.03);
- }
- .section-title {
- font-size: .74rem;
- font-weight: 900;
- letter-spacing: .12em;
- color: var(--sub);
- text-transform: uppercase;
- margin-bottom: 10px;
- }
- .hint { color: var(--sub); font-size:.84rem; line-height:1.35; display:block; margin-top:8px; }
- .row { display:flex; gap:8px; align-items:center; }
- .toggle { display:flex; align-items:center; gap:10px; padding:7px 8px; border-radius:12px; cursor:pointer; user-select:none; }
- .toggle:hover { background: rgba(17,24,39,.04); }
- html[data-theme="dark"] .toggle:hover { background: rgba(255,255,255,.06); }
- .toggle input { transform: scale(1.05); accent-color: var(--accent); }
- .dot { width:10px; height:10px; border-radius:50%; flex: 0 0 auto; }
- .status {
- border: 1px dashed rgba(107,114,128,.35);
- border-radius: 14px;
- padding: 10px;
- background: rgba(0,0,0,.02);
- }
- html[data-theme="dark"] .status { background: rgba(255,255,255,.03); }
- .pill {
- display:inline-flex;
- align-items:center;
- gap:8px;
- padding:6px 10px;
- border-radius: 999px;
- font-size:.8rem;
- font-weight: 800;
- border:1px solid var(--border);
- background: var(--panel);
- white-space:nowrap;
- }
- .pill.on { border-color: rgba(22,163,74,.5); background: rgba(22,163,74,.12); }
- .pill.warn { border-color: rgba(220,38,38,.45); background: rgba(220,38,38,.12); }
- .pill.off { opacity: .85; }
- .slider { width: 100%; accent-color: var(--accent); }
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            transition: background-color 0.3s;
+        }
 
- .canvas {
- position: relative;
- flex: 1;
- overflow: hidden;
- background-image: radial-gradient(rgba(107,114,128,.20) 1px, transparent 1px);
- background-size: 22px 22px;
- touch-action: none;
- cursor: grab;
- }
- .canvas:active { cursor: grabbing; }
- svg { width:100%; height:100%; display:block; transform-origin: 0 0; user-select:none; }
+        header {
+            padding: 12px 20px;
+            background-color: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            z-index: 10;
+        }
 
- /* =========================
- SVG: COMPONENT STYLES
- ========================= */
- .comp-body { fill: var(--panel); stroke: rgba(17,24,39,.80); stroke-width: 2; rx: 10; transition: stroke .2s ease, stroke-width .2s ease; }
- html[data-theme="dark"] .comp-body { stroke: rgba(229,231,235,.85); }
- 
- /* Interactive Component Groups */
- .comp-group { cursor: pointer; }
- .comp-group:hover .comp-body { stroke: var(--accent); stroke-width: 4; }
- 
- .comp-header { font-size: 16px; font-weight: 900; fill: var(--text); text-anchor: middle; pointer-events: none; }
- .comp-sub { font-size: 12px; fill: var(--sub); text-anchor: middle; pointer-events: none; }
- .pin-txt { font-size: 11px; fill: var(--sub); pointer-events: none; font-family: var(--mono); font-weight: 800; }
- .zone-box { fill: none; stroke: rgba(107,114,128,.35); stroke-width: 4; stroke-dasharray: 10,6; rx: 18; }
- .zone-label { font-size: 20px; font-weight: 900; fill: rgba(107,114,128,.75); opacity: .55; text-transform: uppercase; }
- .umbilical-bg { fill:none; stroke: rgba(107,114,128,.25); stroke-width: 200; opacity: 0.10; stroke-linecap: round; }
- .lc-box { fill: #fff; stroke: rgba(17,24,39,.85); rx: 2; }
+        h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
+        .subtitle { font-size: 0.8rem; color: var(--text-sub); margin-left: 10px; font-weight: normal; }
 
- /* =========================
- SVG: WIRE STYLES + COLORS
- ========================= */
- .wire {
- fill: none;
- stroke-width: 2.7;
- stroke-linecap: round;
- stroke-linejoin: round;
- opacity: var(--wire-base);
- transition: opacity .25s ease, stroke-width .2s ease, filter .2s ease;
- cursor: pointer;
- }
- .wire.mains { stroke-width: 4; }
- .wire:hover {
- opacity: 1;
- stroke-width: 7;
- filter: drop-shadow(0 2px 4px rgba(0,0,0,.18));
- }
- .wire.active {
- opacity: var(--wire-on);
- stroke-width: 6;
- filter: drop-shadow(0 2px 6px rgba(0,0,0,.18));
- }
- .wire.flow { stroke-dasharray: 14 9; animation: flow 1s linear infinite; }
- .wire.focus {
- opacity: 1 !important;
- stroke-width: 10 !important;
- filter: drop-shadow(0 4px 10px rgba(37,99,235,.35));
- }
- @keyframes flow { to { stroke-dashoffset: -26; } }
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
 
- .bus-mains-L { stroke: #d32f2f; }
- .bus-mains-N { stroke: #0d47a1; }
- .bus-earth { stroke: #2e7d32; stroke-dasharray: 8 4; }
- .bus-5v { stroke: #dc3545; }
- .bus-3v3 { stroke: #f59e0b; }
- .bus-gnd { stroke: #495057; }
- .bus-sig { stroke: #06b6d4; }
- .wire.bus-sig { stroke-width: 3; }
- .bus-tc-pos { stroke: #8b5cf6; }
- .bus-tc-neg { stroke: #6d28d9; stroke-dasharray: 4 3; }
- .w-scale-red { stroke: #d32f2f; }
- .w-scale-blk { stroke: #111827; }
- .w-scale-wht { stroke: #f3f4f6; stroke-dasharray: 4 2; }
- .w-scale-grn { stroke: #16a34a; }
+        .controls {
+            width: 250px;
+            background-color: var(--panel-bg);
+            border-right: 1px solid var(--border-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+            flex-shrink: 0;
+        }
 
- .shield-layer { stroke: rgba(156,163,175,.55); stroke-width: 8; opacity: .25; stroke-linecap: round; fill:none; }
- .tag-bg { fill: var(--panel); opacity: .92; stroke: var(--border); }
- .wire-tag { font-size: 12px; fill: var(--text); font-weight: 900; text-anchor: middle; }
+        .control-group {
+            background: var(--bg-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+        }
 
- /* =========================
- TOOLTIP + MODAL
- ========================= */
- #tooltip {
- position: fixed;
- z-index: 2000;
- opacity: 0;
- pointer-events: none;
- background: rgba(0,0,0,.92);
- color: white;
- padding: 8px 10px;
- border-radius: 12px;
- font-size: .85rem;
- box-shadow: var(--shadow2);
- max-width: 360px;
- }
- .modal-overlay {
- position: fixed;
- inset: 0;
- z-index: 2500;
- display: flex;
- justify-content: center;
- align-items: center;
- padding: 18px;
- background: rgba(0,0,0,.55);
- opacity: 0;
- pointer-events: none;
- transition: opacity .18s ease;
- }
- .modal-overlay.open { opacity: 1; pointer-events: auto; }
- .modal-card {
- width: min(760px, 100%);
- max-height: 90vh;
- border-radius: 20px;
- background: var(--panel);
- color: var(--text);
- border: 1px solid var(--border);
- box-shadow: var(--shadow);
- overflow-y: auto;
- display: flex;
- flex-direction: column;
- }
- .modal-head {
- padding: 14px 16px;
- border-bottom: 1px solid var(--border);
- display: flex;
- justify-content: space-between;
- align-items: start;
- gap: 10px;
- }
- .modal-title { margin: 0; font-size: 1.02rem; font-weight: 900; letter-spacing: .2px; }
- .modal-sub { margin-top: 4px; color: var(--sub); font-size: .86rem; font-family: var(--mono); }
- .modal-body { padding: 14px 16px 16px; }
- .meta-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .92rem; }
- .meta-table td { padding: 8px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
- .meta-label { width: 160px; color: var(--sub); font-weight: 800; }
- .callout {
- margin-top: 12px;
- padding: 10px 12px;
- border-radius: 14px;
- border-left: 4px solid var(--danger);
- background: rgba(220,38,38,.08);
- color: var(--danger);
- font-size: .92rem;
- line-height: 1.35;
- }
- .guide-box {
- margin-top: 12px;
- padding: 12px;
- border-radius: 14px;
- border-left: 4px solid var(--accent);
- background: rgba(37,99,235,.06);
- color: var(--text);
- font-size: .95rem;
- line-height: 1.5;
- }
- .guide-title { font-weight:800; color:var(--accent); text-transform:uppercase; font-size:.75rem; letter-spacing:.05em; margin-bottom:6px; }
+        .control-group h3 {
+            margin-top: 0;
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
 
- .okcallout {
- margin-top: 12px;
- padding: 10px 12px;
- border-radius: 14px;
- border-left: 4px solid var(--success);
- background: rgba(22,163,74,.08);
- color: var(--success);
- font-size: .92rem;
- line-height: 1.35;
- }
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        .toggle-row:last-child { margin-bottom: 0; }
+        .toggle-row input { margin-right: 10px; accent-color: var(--accent-color); }
 
- @media (max-width: 980px) { aside.controls { width: 280px; } }
- @media (max-width: 840px) {
- header { gap: 10px; }
- .container { flex-direction: column; }
- aside.controls { width: 100%; height: 320px; border-right: none; border-bottom: 1px solid var(--border); }
- .canvas { height: calc(100vh - 58px - 320px); }
- }
- </style>
+        .legend-marker {
+            width: 10px;
+            height: 10px;
+            display: inline-block;
+            margin-right: 8px;
+            border-radius: 50%;
+        }
+
+        button {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+            width: 100%;
+            font-weight: 500;
+        }
+
+        button:hover { background-color: var(--border-color); }
+        button.primary { background-color: var(--accent-color); color: white; border: none; }
+        button.primary:hover { opacity: 0.9; }
+        button.danger { color: var(--danger-color); border-color: var(--danger-color); background: transparent; }
+        button.danger:hover { background: rgba(211, 47, 47, 0.1); }
+
+        .canvas-wrapper {
+            flex: 1;
+            position: relative;
+            background-image: 
+                linear-gradient(var(--border-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            background-position: -1px -1px;
+            overflow: auto;
+            cursor: grab;
+        }
+        
+        .canvas-wrapper:active { cursor: grabbing; }
+
+        svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            min-width: 1300px;
+            min-height: 1000px;
+        }
+
+        /* Component Styles */
+        .comp-body { fill: var(--component-fill); stroke: var(--component-stroke); stroke-width: 2; }
+        .comp-header { font-size: 13px; font-weight: bold; fill: var(--text-main); text-anchor: middle; pointer-events: none; }
+        .comp-sub { font-size: 10px; fill: var(--text-sub); text-anchor: middle; pointer-events: none; }
+        .pin-txt { font-size: 9px; fill: var(--text-sub); pointer-events: none; }
+        .hub-zone { fill: rgba(33, 150, 243, 0.08); stroke: #2196F3; stroke-width: 1.5; stroke-dasharray: 6; }
+        
+        /* Wires */
+        .wire {
+            fill: none;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            opacity: var(--wire-off-opacity);
+            transition: opacity 0.3s, stroke-width 0.2s;
+            cursor: help; /* Changed to indicate help available */
+        }
+
+        .wire.visible { opacity: 0.8; }
+        .wire.visible:hover { stroke-width: 6; opacity: 1; stroke: #000; }
+        [data-theme="dark"] .wire.visible:hover { stroke: #fff; }
+
+        .wire-mains { stroke-width: 4; }
+        .wire.active-anim { 
+            opacity: 1; 
+            stroke-dasharray: 10, 6; 
+            animation: flow 0.8s linear infinite; 
+        }
+
+        /* Bus Colors */
+        .bus-5v { stroke: #e91e63; }
+        .bus-3v3 { stroke: #ff9800; }
+        .bus-gnd { stroke: #455a64; }
+        .bus-sig { stroke: #2196F3; }
+        .bus-mains-L { stroke: #d32f2f; } /* Live */
+        .bus-mains-N { stroke: #1976D2; } /* Neutral */
+        .bus-mains-PE { stroke: #388E3C; stroke-dasharray: 4,2; } /* Earth */
+
+        @keyframes flow { to { stroke-dashoffset: -16; } }
+
+        /* Zones */
+        .zone-label {
+            font-size: 16px;
+            font-weight: bold;
+            fill: var(--text-sub);
+            opacity: 0.2;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+        }
+        .zone-divider {
+            stroke: var(--border-color);
+            stroke-width: 2;
+            stroke-dasharray: 10, 5;
+        }
+
+        /* Tooltip */
+        #tooltip {
+            position: fixed;
+            background: var(--tooltip-bg);
+            color: var(--tooltip-text);
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            border-left: 4px solid var(--accent-color);
+            transform: translate(15px, 15px);
+            white-space: nowrap;
+        }
+        #tooltip strong { display: block; margin-bottom: 4px; font-size: 0.95rem; }
+        #tooltip span { display: block; font-size: 0.8rem; opacity: 0.8; margin-bottom: 2px; }
+        #tooltip .hint { font-size: 0.7rem; color: #4fc3f7; margin-top: 4px; font-weight: bold; }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+            backdrop-filter: blur(2px);
+        }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        
+        .modal-content {
+            background: var(--panel-bg);
+            color: var(--text-main);
+            width: 90%;
+            max-width: 450px;
+            border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            padding: 25px;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.2s;
+        }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
+
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .modal-title { font-size: 1.2rem; font-weight: bold; color: var(--accent-color); margin: 0; }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-sub); padding: 0; margin: 0; width: auto; }
+        .modal-body { font-size: 0.95rem; line-height: 1.5; }
+        .modal-step { margin-bottom: 10px; display: flex; }
+        .step-num { font-weight: bold; color: var(--accent-color); margin-right: 10px; min-width: 20px; }
+
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .controls { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-color); }
+        }
+    </style>
 </head>
-
 <body>
- <header>
- <div>
- <h1>Gaggia V20 Diagram <span class="badge">Installation Guide Mode</span></h1>
- <div class="subline">Click ANY component or wire for a detailed replacement guide.</div>
- </div>
- <div class="btnbar">
- <button id="resetViewBtn" title="Reset view (R)" aria-label="Reset view">Reset View</button>
- <button id="themeBtn" title="Toggle theme (T)" aria-label="Toggle dark mode">Toggle Theme</button>
- <button class="primary" id="traceBtn" title="Animate active paths" aria-label="Trace active paths">▶ Trace</button>
- <button id="exportBtn" title="Export wiring database to JSON" aria-label="Export wiring database">Export JSON</button>
- </div>
- </header>
-
- <div class="container">
- <aside class="controls" aria-label="Controls sidebar">
- 
- <!-- NEW GUIDE SECTION -->
- <div class="section">
- <div class="section-title" style="color:var(--accent)">How to use this guide</div>
- <div class="status" style="border-left: 3px solid var(--accent); background:rgba(37,99,235,0.04);">
- <div style="font-size: .9rem; line-height: 1.45;">
- <b>Interactive Mode:</b><br/>
- Click on <b>ANY</b> component (like the SSR, Switch, or Boiler) or <b>ANY</b> wire to see step-by-step instructions for that specific part.<br/><br/>
- <small style="color:var(--sub)">Every click opens a "Installation Guide" panel specific to that location.</small>
- </div>
- </div>
- </div>
-
- <div class="section">
- <div class="section-title">Visibility Groups</div>
- <label class="toggle"><input type="checkbox" class="viz-toggle" data-target="h-earth" checked><span class="dot" style="background:#2e7d32"></span>Earth (PE)</label>
- <label class="toggle"><input type="checkbox" class="viz-toggle" data-target="h-mains" checked><span class="dot" style="background:#d32f2f"></span>Mains Live (L)</label>
- <label class="toggle"><input type="checkbox" class="viz-toggle" data-target="h-neutral" checked><span class="dot" style="background:#0d47a1"></span>Neutral (N)</label>
- <label class="toggle"><input type="checkbox" class="viz-toggle" data-target="h-5v" checked><span class="dot" style="background:#dc3545"></span>5V Power</label>
- <label class="toggle"><input type="checkbox" class="viz-toggle" data-target="h-3v3" checked><span class="dot" style="background:#f59e0b"></span>3.3V Logic</label>
- <label class="toggle"><input type="checkbox" class="viz-toggle" data-target="h-sig" checked><span class="dot" style="background:#06b6d4"></span>Signals / PWM / SPI</label>
- <label class="toggle"><input type="checkbox" class="viz-toggle" data-target="h-sensor" checked><span class="dot" style="background:#8b5cf6"></span>Thermocouple</label>
- <label class="toggle"><input type="checkbox" class="viz-toggle" data-target="h-scale" checked><span class="dot" style="background:#a855f7"></span>Scale (HX711)</label>
- </div>
-
- <div class="section">
- <div class="section-title">Search / Focus</div>
- <div class="row">
- <input id="wireSearch" placeholder="Wire ID (e.g. mains-rail)" aria-label="Wire ID search"
- style="flex:1; padding:10px 12px; border-radius: 14px; border:1px solid var(--border); background: var(--panel); color: var(--text);" />
- <button id="wireSearchBtn" aria-label="Focus wire">Go</button>
- </div>
- </div>
- </aside>
-
- <div class="canvas" id="canvas" aria-label="Diagram canvas">
- <svg viewBox="0 0 2000 1600" id="svgRoot">
- 
- <!-- ZONES -->
- <rect x="50" y="50" width="1150" height="1500" class="zone-box" />
- <text x="80" y="100" class="zone-label">Internal Zone (Machine Chassis)</text>
- 
- <rect x="1350" y="50" width="600" height="1500" class="zone-box" />
- <text x="1380" y="100" class="zone-label">External Box (Low Voltage)</text>
-
- <text x="1250" y="600" class="comp-sub" style="font-size:16px; font-weight:bold; text-anchor:middle">UMBILICAL CHANNEL</text>
- <path d="M 1150 700 L 1400 700" class="umbilical-bg" />
-
- <!-- ================= INTERNAL COMPONENTS (HV) - ROW 1 ================= -->
- 
- <!-- Power Switch (Top Left) -->
- <g transform="translate(150, 200)" class="comp-group" data-id="comp-switch">
- <rect width="160" height="120" class="comp-body" />
- <text x="80" y="35" class="comp-header">Power Switch</text>
- <text x="80" y="55" class="comp-sub">DPST (L/N)</text>
- 
- <rect x="130" y="70" width="14" height="14" fill="#d32f2f"/> <text x="125" y="82" class="pin-txt" text-anchor="end">L-Out</text>
- <rect x="130" y="95" width="14" height="14" fill="#0d47a1"/> <text x="125" y="107" class="pin-txt" text-anchor="end">N-Out</text>
- <rect x="10" y="80" width="14" height="14" fill="#4caf50"/> <text x="30" y="92" class="pin-txt">PE</text>
- 
- <!-- Brew Switch (Attached) -->
- <rect x="0" y="140" width="160" height="60" class="comp-body"/>
- <text x="80" y="175" class="comp-header">Brew Switch</text>
- <text x="80" y="190" class="comp-sub">Leave ON</text>
- </g>
-
- <!-- PSU (Top Center-Left) -->
- <g transform="translate(450, 200)" class="comp-group" data-id="comp-psu">
- <rect width="140" height="120" class="comp-body"/>
- <text x="70" y="35" class="comp-header">PSU 5V</text>
- <circle cx="20" cy="70" r="6" fill="#d32f2f"/> <text x="15" y="75" class="pin-txt" text-anchor="end">AC L</text>
- <circle cx="20" cy="95" r="6" fill="#1976d2"/> <text x="15" y="100" class="pin-txt" text-anchor="end">AC N</text>
- <circle cx="120" cy="70" r="6" fill="#d32f2f"/> <text x="125" y="75" class="pin-txt">5V</text>
- <circle cx="120" cy="95" r="6" fill="#616161"/> <text x="125" y="100" class="pin-txt">GND</text>
- </g>
- 
- <!-- Live Split Chain (Top) -->
- <g transform="translate(600, 130)" class="comp-group" data-id="comp-wago-live">
- <!-- L_Wago 1 -->
- <rect x="0" y="0" width="40" height="30" class="comp-body" stroke="#d32f2f"/>
- <text x="20" y="15" class="pin-txt" text-anchor="middle" fill="#d32f2f">L1</text>
- 
- <!-- L_Wago 2 -->
- <rect x="60" y="0" width="40" height="30" class="comp-body" stroke="#d32f2f"/>
- <text x="80" y="15" class="pin-txt" text-anchor="middle" fill="#d32f2f">L2</text>
- 
- <!-- Jumper Wire -->
- <path d="M 40 15 L 60 15" class="wire bus-mains-L" stroke-width="4"/>
- <text x="50" y="45" class="comp-sub">Live Chain (2x 413)</text>
- </g>
-
-
- 
- <!-- SAFETY DEVICE IN HEATER CHAIN (DO NOT BYPASS) -->
- <g transform="translate(790, 160)" class="comp-group" data-id="comp-hilimit">
- <rect width="70" height="40" class="comp-body" rx="10" ry="10" stroke="#dc2626" stroke-dasharray="3 3"/>
- <text x="35" y="18" class="pin-txt" text-anchor="middle" fill="#dc2626">STEAM</text>
- <text x="35" y="32" class="pin-txt" text-anchor="middle" fill="#dc2626">HI-LIMIT</text>
- </g>
-
-<!-- SSR (Top Center-Right) - UPDATED LABELS -->
- <g transform="translate(750, 200)" class="comp-group" data-id="comp-ssr">
- <rect width="140" height="140" class="comp-body"/>
- <text x="70" y="35" class="comp-header">SSR</text>
- <text x="70" y="55" class="comp-sub">Heater Control</text>
- <!-- Specific labels for user request -->
- <text x="10" y="60" class="pin-txt" fill="#d32f2f" style="font-size:9px">Old Stat Cable 1</text>
- <text x="130" y="60" class="pin-txt" text-anchor="end" fill="#d32f2f" style="font-size:9px">Old Stat Cable 2</text>
-
- <rect x="20" y="70" width="14" height="14" fill="#d32f2f"/><text x="40" y="82" class="pin-txt">AC In</text>
- <rect x="106" y="70" width="14" height="14" fill="#d32f2f"/><text x="100" y="82" class="pin-txt" text-anchor="end">Load</text>
- <circle cx="30" cy="120" r="4"/><text x="30" y="135" class="pin-txt" text-anchor="middle">DC+</text>
- <circle cx="110" cy="120" r="4"/><text x="110" y="135" class="pin-txt" text-anchor="middle">DC-</text>
- 
- <rect x="130" y="10" width="10" height="120" fill="#bbb"/> <text x="145" y="70" class="pin-txt" style="writing-mode: vertical-rl;">Heatsink</text>
- </g>
-
-<!-- Boiler (Top Right) - UPDATED -->
- <g transform="translate(1000, 200)" class="comp-group" data-id="comp-boiler">
- <rect width="140" height="140" class="comp-body" stroke-dasharray="4" stroke="#d32f2f"/>
- <text x="70" y="35" class="comp-header">Boiler</text>
- <circle cx="20" cy="90" r="6" fill="none" stroke="#333"/> <text x="20" y="110" class="pin-txt" text-anchor="middle">L</text>
- <circle cx="120" cy="90" r="6" fill="none" stroke="#333"/> <text x="120" y="110" class="pin-txt" text-anchor="middle">N</text>
- <circle cx="70" cy="20" r="5" fill="#7b1fa2"/> 
- <text x="70" y="15" class="pin-txt" text-anchor="middle">Probe</text>
- <!-- Ghost of old stat -->
- <circle cx="70" cy="20" r="12" fill="none" stroke="rgba(100,100,100,0.3)" stroke-dasharray="2,2"/>
- <text x="120" y="15" class="pin-txt" fill="#999" style="font-size:9px">(Brew Stat Hole)</text>
-
- <rect x="70" y="125" width="10" height="10" fill="#4caf50"/> <text x="75" y="145" class="pin-txt" text-anchor="middle">Body</text>
- </g>
-
- <!-- ================= INTERNAL COMPONENTS (HV) - ROW 2 ================= -->
-
- <!-- Neutral Chain (Left Side) -->
- <g transform="translate(150, 500)" class="comp-group" data-id="comp-wago-neutral">
- <!-- N_Wago 1 -->
- <rect x="0" y="0" width="40" height="30" class="comp-body" stroke="#0d47a1"/>
- <text x="20" y="20" class="pin-txt" text-anchor="middle" fill="#0d47a1">N1</text>
- <!-- Link N1-N2 -->
- <path d="M 20 30 L 20 50" class="wire bus-mains-N"/>
- 
- <!-- N_Wago 2 -->
- <rect x="0" y="50" width="40" height="30" class="comp-body" stroke="#0d47a1"/>
- <text x="20" y="70" class="pin-txt" text-anchor="middle" fill="#0d47a1">N2</text>
- <!-- Link N2-N3 -->
- <path d="M 20 80 L 20 100" class="wire bus-mains-N"/>
- 
- <!-- N_Wago 3 -->
- <rect x="0" y="100" width="40" height="30" class="comp-body" stroke="#0d47a1"/>
- <text x="20" y="120" class="pin-txt" text-anchor="middle" fill="#0d47a1">N3</text>
- <!-- Link N3-N4 -->
- <path d="M 20 130 L 20 150" class="wire bus-mains-N"/>
- 
- <!-- N_Wago 4 -->
- <rect x="0" y="150" width="40" height="30" class="comp-body" stroke="#0d47a1"/>
- <text x="20" y="170" class="pin-txt" text-anchor="middle" fill="#0d47a1">N4</text>
- <!-- Link N4-N5 -->
- <path d="M 20 180 L 20 200" class="wire bus-mains-N"/>
- 
- <!-- N_Wago 5 -->
- <rect x="0" y="200" width="40" height="30" class="comp-body" stroke="#0d47a1"/>
- <text x="20" y="220" class="pin-txt" text-anchor="middle" fill="#0d47a1">N5</text>
- 
- <text x="50" y="115" class="comp-sub" text-anchor="start">Neutral Chain (5x 413)</text>
- </g>
-
- <!-- Shelly (Bottom Center-Left) -->
- <g transform="translate(450, 600)" class="comp-group" data-id="comp-shelly">
- <rect width="140" height="160" class="comp-body" stroke="#0d6efd"/>
- <text x="70" y="35" class="comp-header">Shelly</text>
- <text x="70" y="55" class="comp-sub">Brew Guard</text>
- <rect x="20" y="70" width="14" height="14" fill="#d32f2f"/><text x="40" y="82" class="pin-txt">L</text>
- <rect x="20" y="100" width="14" height="14" fill="#d32f2f"/><text x="40" y="112" class="pin-txt">I</text>
- <rect x="20" y="130" width="14" height="14" fill="#1976d2"/><text x="40" y="142" class="pin-txt">N</text>
- <rect x="106" y="100" width="14" height="14" fill="#d32f2f"/><text x="100" y="112" class="pin-txt" text-anchor="end">O</text>
- </g>
-
- <!-- Dimmer (Bottom Center-Right) -->
- <g transform="translate(750, 600)" class="comp-group" data-id="comp-dimmer">
- <rect width="160" height="180" class="comp-body"/>
- <text x="80" y="35" class="comp-header">Dimmer</text>
- 
- <!-- HV Side -->
- <rect x="20" y="70" width="14" height="14" fill="#d32f2f"/><text x="40" y="82" class="pin-txt">L In</text>
- <rect x="20" y="100" width="14" height="14" fill="#1976d2"/><text x="40" y="112" class="pin-txt">N</text>
- <rect x="126" y="70" width="14" height="14" fill="#d32f2f"/><text x="120" y="82" class="pin-txt" text-anchor="end">Load</text>
- 
- <!-- LV Side -->
- <text x="80" y="135" class="chip-lbl">Low Voltage</text>
- <circle cx="30" cy="155" r="4" fill="#fd7e14"/><text x="30" y="170" class="pin-txt" text-anchor="middle">VCC</text>
- <circle cx="60" cy="155" r="4" fill="#616161"/><text x="60" y="170" class="pin-txt" text-anchor="middle">GND</text>
- <circle cx="90" cy="155" r="4"/><text x="90" y="170" class="pin-txt" text-anchor="middle">ZC</text>
- <circle cx="120" cy="155" r="4"/><text x="120" y="170" class="pin-txt" text-anchor="middle">PSM</text>
- </g>
-
- <!-- Relay Module (Solenoid Control) -->
- <g transform="translate(780, 820)" class="comp-group" data-id="comp-relay-solenoid">
-  <rect width="180" height="160" class="comp-body" stroke="#ff9800"/>
-  <text x="90" y="35" class="comp-header">Relay Module</text>
-  <text x="90" y="55" class="comp-sub">Solenoid Control</text>
-
-  <!-- HV Contacts -->
-  <circle cx="20" cy="70" r="6" fill="#d32f2f"/><text x="20" y="95" class="pin-txt" text-anchor="middle">COM</text>
-  <circle cx="160" cy="70" r="6" fill="#d32f2f"/><text x="160" y="95" class="pin-txt" text-anchor="middle">NO</text>
-  <text x="90" y="110" class="pin-txt" text-anchor="middle">HV: 230V</text>
-
-  <!-- LV Control -->
-  <circle cx="20" cy="125" r="5" fill="#dc3545"/><text x="35" y="130" class="pin-txt">5V</text>
-  <circle cx="20" cy="145" r="5" fill="#495057"/><text x="40" y="150" class="pin-txt">GND</text>
-  <circle cx="160" cy="135" r="5" fill="#06b6d4"/><text x="145" y="140" class="pin-txt" text-anchor="end">IN</text>
- </g>
-
-
- <!-- Pump (Bottom Right) -->
- <g transform="translate(1000, 600)" class="comp-group" data-id="comp-pump">
- <rect width="140" height="140" class="comp-body" stroke-dasharray="4"/>
- <text x="70" y="35" class="comp-header">Pump</text>
- <circle cx="20" cy="80" r="6" fill="none" stroke="#333"/> <text x="20" y="100" class="pin-txt" text-anchor="middle">L</text>
- <text x="20" y="118" class="pin-txt" text-anchor="middle" style="font-size:10px;opacity:.8">from dimmer</text>
- <circle cx="120" cy="80" r="6" fill="none" stroke="#333"/> <text x="120" y="100" class="pin-txt" text-anchor="middle">N</text>
- <text x="120" y="118" class="pin-txt" text-anchor="middle" style="font-size:10px;opacity:.8">via fuse/filter</text>
- <rect x="70" y="125" width="10" height="10" fill="#4caf50"/> <text x="75" y="145" class="pin-txt" text-anchor="middle">Body</text>
- </g>
-
- <!-- Solenoid Valve (Beside Pump) -->
- <g transform="translate(1000, 800)" class="comp-group" data-id="comp-solenoid">
- <rect width="140" height="140" class="comp-body" stroke="#00bcd4"/>
- <text x="70" y="35" class="comp-header">Solenoid</text>
- <text x="70" y="55" class="comp-sub">3-Way Valve</text>
- <circle cx="20" cy="80" r="6" fill="none" stroke="#333"/> <text x="20" y="100" class="pin-txt" text-anchor="middle">L</text>
- <circle cx="120" cy="80" r="6" fill="none" stroke="#333"/> <text x="120" y="100" class="pin-txt" text-anchor="middle">N</text>
- </g>
-
- <!-- Scale Tray (Internal Bottom) -->
- <g transform="translate(450, 1000)" class="comp-group" data-id="comp-scale">
- <rect width="200" height="160" class="comp-body" stroke="#9c27b0" stroke-dasharray="4"/>
- <text x="100" y="30" class="comp-header">Scale Tray</text>
- <text x="100" y="50" class="comp-sub">4x Load Cells</text>
- 
- <!-- Cells -->
- <rect x="20" y="60" width="30" height="30" class="lc-box"/> <text x="35" y="80" class="pin-txt" text-anchor="middle">1</text>
- <rect x="150" y="60" width="30" height="30" class="lc-box"/> <text x="165" y="80" class="pin-txt" text-anchor="middle">2</text>
- <rect x="20" y="110" width="30" height="30" class="lc-box"/> <text x="35" y="130" class="pin-txt" text-anchor="middle">4</text>
- <rect x="150" y="110" width="30" height="30" class="lc-box"/> <text x="165" y="130" class="pin-txt" text-anchor="middle">3</text>
- 
- <!-- Bridge Wiring Vis -->
- <path d="M 50 75 L 150 75" class="wire" stroke="#ccc" stroke-width="1" data-id="bridge-wht"/>
- <path d="M 50 125 L 150 125" class="wire" stroke="#ccc" stroke-width="1" data-id="bridge-wht"/>
- <path d="M 35 90 L 35 110" class="wire" stroke="#ccc" stroke-width="1" data-id="bridge-blk"/>
- <path d="M 165 90 L 165 110" class="wire" stroke="#ccc" stroke-width="1" data-id="bridge-blk"/>
- 
- <!-- Output Pad -->
- <rect x="180" y="80" width="20" height="40" fill="#9c27b0"/>
- </g>
-
- <!-- ================= EXTERNAL COMPONENTS (BOX) ================= -->
-
- <!-- ESP32 -->
- <g transform="translate(1400, 300)" class="comp-group" data-id="comp-esp32">
- <rect width="240" height="350" class="comp-body"/>
- <text x="120" y="35" class="comp-header">ESP32 (External)</text>
- 
- <!-- Power In -->
- <circle cx="30" cy="70" r="5" fill="#dc3545"/><text x="40" y="75" class="pin-txt">5V In</text>
- <circle cx="30" cy="95" r="5" fill="#495057"/><text x="40" y="100" class="pin-txt">GND</text>
- 
- <!-- 3.3V Out -->
- <circle cx="210" cy="70" r="5" fill="#fd7e14"/><text x="200" y="75" class="pin-txt" text-anchor="end">3.3V</text>
- <circle cx="210" cy="95" r="5" fill="#495057"/><text x="200" y="100" class="pin-txt" text-anchor="end">GND</text>
- 
- <!-- Control Pins -->
- <g transform="translate(30, 160)">
- <circle cx="0" cy="0" r="4"/><text x="15" y="5" class="pin-txt">GPIO9 (SSR)</text>
- <circle cx="0" cy="40" r="4"/><text x="15" y="45" class="pin-txt">GPIO14 (ZC)</text>
- <circle cx="0" cy="80" r="4"/><text x="15" y="85" class="pin-txt">GPIO16 (PSM)</text>
- <circle cx="0" cy="120" r="4"/><text x="15" y="125" class="pin-txt">GPIO4 (DT)</text>
- <circle cx="0" cy="140" r="4"/><text x="15" y="145" class="pin-txt">GPIO5 (SCK)</text>
- <circle cx="0" cy="180" r="4"/><text x="15" y="185" class="pin-txt">GPIO17 (Relay)</text>
- </g>
-
- <!-- SPI Pins (Right Side) -->
- <g transform="translate(210, 160)">
- <circle cx="0" cy="0" r="4"/><text x="-15" y="5" class="pin-txt" text-anchor="end">CS (6)</text>
- <circle cx="0" cy="40" r="4"/><text x="-15" y="45" class="pin-txt" text-anchor="end">MISO (7)</text>
- <circle cx="0" cy="80" r="4"/><text x="-15" y="85" class="pin-txt" text-anchor="end">SCK (15)</text>
- </g>
- </g>
-
- <!-- MAX31855 (External) -->
- <g transform="translate(1400, 800)" class="comp-group" data-id="comp-max">
- <rect width="140" height="160" class="comp-body"/>
- <text x="70" y="35" class="comp-header">MAX31855</text>
- <text x="70" y="55" class="comp-sub">Temp Sensor</text>
- 
- <!-- Logic Side -->
- <circle cx="120" cy="80" r="4"/><text x="110" y="85" class="pin-txt" text-anchor="end">CS</text>
- <circle cx="120" cy="100" r="4"/><text x="110" y="105" class="pin-txt" text-anchor="end">DO</text>
- <circle cx="120" cy="120" r="4"/><text x="110" y="125" class="pin-txt" text-anchor="end">SCK</text>
- <circle cx="120" cy="140" r="4" fill="#fd7e14"/><text x="110" y="145" class="pin-txt" text-anchor="end">VCC</text>
- 
- <!-- Probe Side -->
- <rect x="25" y="80" width="14" height="30" fill="#7b1fa2"/>
- <text x="20" y="90" class="pin-txt" text-anchor="end">T+</text>
- <text x="20" y="110" class="pin-txt" text-anchor="end">T-</text>
- </g>
-
- <!-- HX711 (External) -->
- <g transform="translate(1400, 1050)" class="comp-group" data-id="comp-hx711">
- <rect width="140" height="160" class="comp-body"/>
- <text x="70" y="35" class="comp-header">HX711</text>
- <text x="70" y="55" class="comp-sub">Scale Amp</text>
- 
- <!-- Logic Side -->
- <circle cx="120" cy="80" r="4"/><text x="110" y="85" class="pin-txt" text-anchor="end">DT</text>
- <circle cx="120" cy="100" r="4"/><text x="110" y="105" class="pin-txt" text-anchor="end">SCK</text>
- <circle cx="120" cy="120" r="4" fill="#fd7e14"/><text x="110" y="125" class="pin-txt" text-anchor="end">VCC</text>
- <circle cx="120" cy="140" r="4" fill="#495057"/><text x="110" y="145" class="pin-txt" text-anchor="end">GND</text>
- 
- <!-- Sensor Side -->
- <rect x="25" y="80" width="14" height="60" fill="#9c27b0"/>
- <text x="20" y="90" class="pin-txt" text-anchor="end">E+</text>
- <text x="20" y="105" class="pin-txt" text-anchor="end">E-</text>
- <text x="20" y="120" class="pin-txt" text-anchor="end">A-</text>
- <text x="20" y="135" class="pin-txt" text-anchor="end">A+</text>
- </g>
-
-
- <!-- ================= WIRING HARNESSES ================= -->
-
- <!-- EARTH (SAFETY - GREEN) -->
- <g class="harness h-earth">
- <!-- Mains Input to Chassis -->
- <path d="M 20 80 L 150 80 L 150 200" class="wire bus-earth" data-id="earth-chassis"/>
- <!-- Chassis to Boiler -->
- <path d="M 150 185 L 1070 185 L 1070 325" class="wire bus-earth" data-id="earth-boiler"/>
- <!-- Chassis to Pump -->
- <path d="M 150 190 L 1070 190 L 1070 725" class="wire bus-earth" data-id="earth-pump"/>
- <!-- Chassis to SSR Heatsink -->
- <path d="M 150 180 L 890 180 L 890 130" class="wire bus-earth" data-id="earth-ssr"/>
- </g>
-
- <!-- MAINS LIVE (INTERNAL TOP ROUTE) -->
- <g class="harness h-mains">
- <!-- Switch -> Wago L1 -->
- <path d="M 294 277 L 350 277 L 350 165 L 600 165" class="wire bus-mains-L wire-mains" data-id="mains-rail" data-info="Mains: Switch L-Out -> Wago L1"/>
- <rect x="360" y="90" width="60" height="20" class="tag-bg"/><text x="390" y="105" class="wire-tag">3x1.5mm²</text>
-
- <!-- Wago L1 -> PSU -->
- <path d="M 610 160 L 610 250 L 450 250 L 450 270 L 470 270" class="wire bus-mains-L wire-mains" data-id="mains-psu"/>
- 
- <!-- Wago L2 -> Steam Hi-Limit -> SSR In -->
- <path d="M 680 160 L 680 180 L 790 180 L 860 180 L 860 270 L 770 270" class="wire bus-mains-L wire-mains" data-id="mains-ssr"/>
- 
- <!-- Wago L2 -> Shelly L -->
- <path d="M 680 160 L 680 250 L 430 250 L 430 670 L 470 670" class="wire bus-mains-L wire-mains" data-id="mains-shelly"/>
- 
- <!-- Shelly L -> I Bridge -->
- <path d="M 470 670 L 450 670 L 450 700 L 470 700" class="wire bus-mains-L wire-mains" data-id="shelly-bridge"/>
-
- <!-- GUARD: Shelly O -> Brew Switch In (Rerouted Left & UNDER to avoid overlap) -->
- <path d="M 556 712 L 556 750 L 260 750 L 260 360 L 280 360" class="wire bus-mains-L wire-mains" data-id="shelly-out-brew"/>
- 
- <!-- Brew Switch Out -> Splice (Rerouted Right/High) -->
- <path d="M 280 380 L 290 380 L 290 570 L 600 570 L 600 600" class="wire bus-mains-L wire-mains" data-id="brew-splice"/>
- 
- <!-- Splice -> Dimmer L -->
- <path d="M 600 600 L 600 670 L 770 670" class="wire bus-mains-L wire-mains" data-id="shelly-dimmer"/>
- 
- <!-- Splice -> Relay COM (Solenoid Control) -->
- <path d="M 600 600 L 680 600 L 680 890 L 800 890" class="wire bus-mains-L wire-mains" data-id="shelly-solenoid"/>
-
- <!-- Relay NO -> Solenoid L -->
- <path d="M 940 890 L 960 890 L 960 880 L 1020 880" class="wire bus-mains-L wire-mains" data-id="relay-solenoid"/>
-
-<!-- SSR Out -> Boiler Live -->
- <path d="M 856 270 L 970 270 L 970 290 L 1020 290" class="wire bus-mains-L wire-mains" data-id="ssr-boiler-live"/>
-
- <!-- Dimmer Out -> Pump -->
- <path d="M 876 670 L 930 670 L 930 680 L 1020 680" class="wire bus-mains-L wire-mains" data-id="dimmer-pump"/>
- </g>
-
- <!-- NEUTRALS (CENTER ROUTE y=450) -->
- <g class="harness h-neutral">
- <!-- Switch -> Wago N1 -->
- <path d="M 294 295 L 320 295 L 320 480 L 190 480 L 190 500" class="wire bus-mains-N wire-mains" data-id="neutral-switch-wago"/>
- 
- <!-- N1 -> PSU -->
- <path d="M 190 515 L 220 515 L 220 450 L 500 450 L 500 295 L 470 295" class="wire bus-mains-N wire-mains" data-id="neutral-psu"/> 
- 
- <!-- N2 -> Shelly -->
- <path d="M 190 565 L 240 565 L 240 450 L 410 450 L 410 730 L 470 730" class="wire bus-mains-N wire-mains" data-id="neutral-shelly"/> 
- 
- <!-- N3 -> Dimmer -->
- <path d="M 190 615 L 260 615 L 260 450 L 730 450 L 730 700 L 770 700" class="wire bus-mains-N wire-mains" data-id="neutral-dimmer"/> 
- 
- <!-- N4 -> Boiler -->
- <path d="M 190 665 L 280 665 L 280 450 L 1120 450 L 1120 290" class="wire bus-mains-N wire-mains" data-id="neutral-boiler"/> 
- 
- <!-- N5 -> Pump -->
- <path d="M 190 715 L 300 715 L 300 450 L 1120 450 L 1120 680" class="wire bus-mains-N wire-mains" data-id="neutral-pump"/> 
- 
- <!-- N5 -> Solenoid -->
- <path d="M 190 715 L 300 715 L 300 450 L 1120 450 L 1120 880" class="wire bus-mains-N wire-mains" data-id="neutral-solenoid"/>
- </g>
-
- <!-- 5V (INTERNAL -> EXTERNAL) -->
- <g class="harness h-5v">
- <!-- PSU -> Umbilical -> ESP -->
- <path d="M 570 270 L 620 270 L 620 850 L 1250 850 L 1250 370 L 1430 370" class="wire bus-5v" data-id="umbilical-5v"/>
- <path d="M 570 295 L 640 295 L 640 870 L 1270 870 L 1270 395 L 1430 395" class="wire bus-gnd" data-id="umbilical-gnd"/>
-
- <!-- PSU -> Relay Module (Solenoid) -->
- <path d="M 570 270 L 620 270 L 620 945 L 800 945" class="wire bus-5v" data-id="psu-relay-5v"/>
- <path d="M 570 295 L 640 295 L 640 965 L 800 965" class="wire bus-gnd" data-id="psu-relay-gnd"/>
-
- <!-- SSR DC- -> PSU/ESP32 GND -->
- <path d="M 570 295 L 650 295 L 650 320 L 860 320" class="wire bus-gnd" data-id="internal-gnd-ssr"/>
-</g>
-
- <!-- 3.3V LOGIC -->
- <g class="harness h-3v3">
- <!-- ESP -> MAX -->
- <path d="M 1610 370 L 1650 370 L 1650 940 L 1520 940" class="wire bus-3v3" data-id="esp-max-3v3"/>
- 
- <!-- ESP -> HX711 -->
- <path d="M 1610 370 L 1750 370 L 1750 1170 L 1520 1170" class="wire bus-3v3" style="stroke-dasharray:2" data-id="esp-hx711-3v3"/>
- <path d="M 1610 395 L 1780 395 L 1780 1190 L 1520 1190" class="wire bus-gnd" style="stroke-dasharray:2" data-id="esp-hx711-gnd"/>
-
- <!-- ESP -> Internal Dimmer (Umbilical) -->
- <path d="M 1610 370 L 1700 370 L 1700 1300 L 780 1300 L 780 755" class="wire bus-3v3" style="stroke-dasharray:4" data-id="umbilical-3v3-dimmer"/>
- <path d="M 1610 395 L 1720 395 L 1720 1320 L 810 1320 L 810 755" class="wire bus-gnd" style="stroke-dasharray:4" data-id="umbilical-gnd-dimmer"/>
- </g>
-
- <!-- SIGNALS -->
- <g class="harness h-sig">
- <!-- SSR Control: Ext ESP32 GPIO -> SSR DC+ (no extra driver) -->
- <path d="M 1430 460 L 1300 460 L 1300 150 L 880 150 L 880 320 L 780 320" class="wire bus-sig" data-id="umbilical-ssr"/>
-<!-- ZC: Int -> Ext -->
- <path d="M 840 755 L 840 1250 L 1350 1250 L 1350 500 L 1430 500" class="wire bus-sig" data-id="umbilical-zc"/>
- 
- <!-- PSM: Ext -> Int -->
- <path d="M 1430 540 L 1330 540 L 1330 1270 L 870 1270 L 870 755" class="wire bus-sig" data-id="umbilical-psm"/>
-
- <!-- Relay: Ext ESP32 GPIO -> Relay IN (Solenoid Control) -->
- <path d="M 1430 640 L 1330 640 L 1330 955 L 940 955" class="wire bus-sig" data-id="umbilical-relay"/>
- 
- <!-- SPI: ESP <-> MAX (Short Local) -->
- <path d="M 1610 460 L 1630 460 L 1630 880 L 1520 880" class="wire bus-sig" data-id="spi-cs"/>
- <path d="M 1610 500 L 1640 500 L 1640 900 L 1520 900" class="wire bus-sig" data-id="spi-miso"/>
- <path d="M 1610 540 L 1650 540 L 1650 920 L 1520 920" class="wire bus-sig" data-id="spi-sck"/>
- 
- <!-- Scale Data: HX711 <-> ESP -->
- <path d="M 1520 1130 L 1480 1130 L 1480 580 L 1430 580" class="wire bus-sig" data-id="scale-dt"/>
- <path d="M 1520 1150 L 1500 1150 L 1500 600 L 1430 600" class="wire bus-sig" data-id="scale-sck"/>
- </g>
-
- <!-- SENSORS (Thermocouple) -->
- <g class="harness h-sensor">
- <!-- Boiler -> Umbilical -> MAX -->
- <path d="M 1070 220 L 1180 220 L 1180 880 L 1400 880" class="wire bus-tc-pos" data-id="umbilical-tc-pos"/>
- <path d="M 1070 220 L 1180 220 L 1180 900 L 1400 900" class="wire bus-tc-neg" style="stroke-dasharray:4" data-id="umbilical-tc-neg"/>
- 
- <!-- Shield Visuals -->
- <path d="M 1200 880 L 1380 880" class="shield-layer"/>
- <path d="M 1200 900 L 1380 900" class="shield-layer"/>
- </g>
- 
- <!-- SCALE SENSORS -->
- <g class="harness h-scale">
- <!-- Tray -> Umbilical -> HX711 -->
- <path d="M 650 1080 L 1250 1080 L 1250 1140 L 1425 1140" class="wire w-scale-red" data-id="umbilical-lc-red"/>
- <path d="M 650 1080 L 1230 1080 L 1230 1155 L 1425 1155" class="wire w-scale-blk" data-id="umbilical-lc-blk"/>
- <path d="M 650 1080 L 1210 1080 L 1210 1170 L 1425 1170" class="wire w-scale-wht" data-id="umbilical-lc-wht"/>
- <path d="M 650 1080 L 1190 1080 L 1190 1185 L 1425 1185" class="wire w-scale-grn" data-id="umbilical-lc-grn"/>
- 
- <!-- Shield Visuals -->
- <path d="M 1200 1140 L 1400 1140" class="shield-layer"/>
- </g>
-
- </svg>
- <div id="tooltip" role="tooltip"></div>
- </div>
- </div>
-
- <!-- Wire Detail Modal -->
- <div class="modal-overlay" id="modal" aria-hidden="true">
- <div class="modal-card" role="dialog" aria-modal="true" aria-label="Wire details">
- <div class="modal-head">
- <div>
- <div class="modal-title" id="modalTitle">Wire Detail</div>
- <div class="modal-sub" id="modalSub">—</div>
- </div>
- <button id="modalCloseBtn" aria-label="Close wire details">Close</button>
- </div>
- <div class="modal-body" id="modalContent"></div>
- </div>
- </div>
-
- <script>
- /* ============================================================
- Gaggia Mod V20 — Enhanced Interactive Diagram + Guide
- ============================================================ */
-
- // ---------------------------
- // Component Details (For click-guide)
- // ---------------------------
- const componentDetails = {
- 'comp-ssr': {
- title: "SSR (Solid State Relay)",
- sub: "Heater Switching (PID Control)",
- guide: `
- <div class="guide-title">Wiring & Safety</div>
- <b>IMPORTANT:</b> A thermocouple is only a sensor. You must keep an independent hardware over-temp cutoff in series (Steam Hi-Limit thermostat).<br/><br/>
- <div class="guide-title">Installation Steps</div>
- 1. <b>Remove Brew Thermostat (Control Only):</b> Remove only the brew/control thermostat you are replacing. <b>Do NOT remove/bypass the Steam Hi-Limit thermostat. Do not bypass any factory safety device.</b><br/>
- 2. <b>Mount SSR on heatsink:</b> Bolt SSR to a metal surface with thermal paste. Keep HV/LV separated and protected.<br/>
- 3. <b>AC Load side (Terminals 1–2):</b> Connect the two thick wires that previously went to the brew thermostat to SSR <b>AC In</b> and <b>Load</b> (order not important). This places the SSR where the old thermostat was.<br/>
- 4. <b>DC Control side:</b> Use <b>no extra parts</b>: SSR DC+ ← ESP32 GPIO (3.3V), SSR DC- ← ESP32 GND. (GPIO sources SSR input current.)<br/>
- <i>Note:</i> This requires a DC-input SSR that turns on reliably at 3.3V and does not exceed typical ESP32 GPIO current (≈10 mA). If your SSR needs more, you must change the control method (not shown here).<br/>
- `
- },
- 'comp-hilimit': {
- title: "Steam Thermostat (Hi-Limit)",
- sub: "Hardware Over-Temperature Cutoff",
- guide: `
- <div class="guide-title">Do Not Bypass</div>
- This device must remain in series with heater live as the independent cutoff. Your PID/ESP32/SSR control is not a safety device by itself.
- `
- },
-
-'comp-boiler': {
- title: "Boiler Assembly",
- sub: "Heating Element & Sensor Mount",
- guide: `
- <div class="guide-title">Modifications</div>
- 1. <b>Thermocouple Mount:</b> Install the Type-K thermocouple with good metal contact (use washer/thermal paste if needed). It can use the former brew-thermostat mounting point if available.<br/>
- 2. <b>Heater Power:</b> Heater live is now switched by the SSR (for PID). Neutral remains direct.<br/>
- 3. <b>Safety Chain:</b> Keep the Steam Hi-Limit thermostat in series with heater live. 
- `
- },
- 'comp-shelly': {
- title: "Shelly 1 Mini Gen3",
- sub: "Safety Interlock Relay",
- guide: `
- <div class="guide-title">Why is this here?</div>
- The Shelly intercepts the Brew Switch signal. It prevents the pump/solenoid from running if the software crashes or during boot.<br/><br/>
- <div class="guide-title">Connections</div>
- <b>L / N:</b> Constant power from the Wago blocks.<br/>
- <b>I (Input):</b> Bridged from L (Live).<br/>
- <b>O (Output):</b> Goes to the Input of the physical Brew Switch.
- `
- },
- 'comp-dimmer': {
- title: "RobotDyn Dimmer",
- sub: "Pressure Profiling",
- guide: `
- <div class="guide-title">Installation</div>
- 1. <b>Intercept Pump Live:</b> Cut the Live wire going to the pump (or use the output from the Brew Switch).<br/>
- 2. <b>Wiring:</b> Connect the Live from the Brew Switch to 'L-In'. Connect 'Load' to the Pump.<br/>
- 3. <b>Logic:</b> Connect VCC (3.3V), GND, ZC, and PSM to the ESP32.
- `
- },
- 'comp-relay-solenoid': {
- title: "Relay Module (Solenoid)",
- sub: "Electronic Solenoid Switching",
- guide: `
- <div class="guide-title">Purpose</div>
- The relay module lets the ESP32 open/close the 3-way solenoid electronically (screen-only control), while Shelly remains the power gatekeeper.<br/><br/>
- <div class="guide-title">HV Contacts</div>
- <b>COM</b> = connect to the <b>Brew Output Split</b> (gated live after Shelly + Brew switch).<br/>
- <b>NO</b> = connect to <b>Solenoid L</b>.<br/>
- <b>Solenoid N</b> stays on the neutral chain.<br/><br/>
- <div class="guide-title">LV Control</div>
- Power the module from <b>PSU 5V + GND</b> and run <b>IN</b> from an ESP32 GPIO via the umbilical.<br/>
- <i>Note:</i> Some relay modules need a 5V-level IN signal. If yours does, add a proper driver/level shift.
- `
- },
-
- 'comp-switch': {
- title: "Power & Brew Switches",
- sub: "Stock Components - Modified Routing",
- guide: `
- <div class="guide-title">Brew Switch Modification</div>
- <b>Stock:</b> Received power directly from the main switch.<br/>
- <b>Modded:</b> Now receives power from the <b>Shelly Output (O)</b>. This allows the software to 'enable' the button. The switch itself remains a physical emergency stop.
- `
- },
- 'comp-wago-live': {
- title: "Live Wago Chain",
- sub: "Power Distribution",
- guide: `
- <div class="guide-title">Setup</div>
- Create a chain of two Wago 221-413 connectors to split the main Live wire into multiple paths (PSU, SSR, Shelly).
- `
- },
- 'comp-wago-neutral': {
- title: "Neutral Wago Chain",
- sub: "Return Path Distribution",
- guide: `
- <div class="guide-title">Setup</div>
- Create a long chain of Wagos to collect all Neutral wires (PSU, Shelly, Dimmer, Boiler, Pump, Solenoid) into one return path to the main switch.
- `
- },
- 'comp-esp32': {
- title: "ESP32 Microcontroller",
- sub: "The Brains",
- guide: `
- <div class="guide-title">Mounting</div>
- House inside the external low-voltage box. Ensure the USB port is accessible for updates.<br/>
- <b>Critical:</b> Keep 5V/3.3V logic wiring completely separated from 230V mains wiring.
- `
- }
- };
-
- // ---------------------------
- // Wire database
- // ---------------------------
- const wireDetails = {
- // EARTH
- 'earth-chassis': {
- title: "Earth Input",
- action: "Connect Main Earth to Chassis.",
- from: "Power Cord (Green/Yellow)",
- to: "Chassis Screw (Star Point)",
- conn: "Ring Terminal",
- note: "Sand the chassis paint to ensure metal-to-metal contact."
- },
- 'earth-boiler': {
- title: "Boiler Earth",
- action: "Earth the Boiler Body.",
- from: "Chassis Star Point",
- to: "Boiler Tab/Screw",
- conn: "Ring Terminal",
- note: "Mandatory for safety."
- },
- 'earth-pump': {
- title: "Pump Earth",
- action: "Earth the Pump Body.",
- from: "Chassis Star Point",
- to: "Pump Metal Casing",
- conn: "Faston/Spade",
- note: "If pump has plastic casing, skip."
- },
- 'earth-ssr': {
- title: "SSR Earth",
- action: "Earth the SSR Heatsink.",
- from: "Chassis Star Point",
- to: "SSR Backplate/Heatsink",
- conn: "Ring Terminal under bolt",
- note: "Ensures safety if SSR melts internally."
- },
-
- // MAINS LIVE
- 'mains-rail': {
- title: "Mains Split (Rail)",
- action: "Connect Switch to Wago L1.",
- from: "Power Switch 'L-Out' (Piggyback spade)",
- to: "Wago 221-413 (L1) - Port 1",
- conn: "End A: Female Spade (6.3mm), End B: Strip 11mm",
- note: "GUIDE: Locate the main Live wire coming from the switch. Cut off the existing spade if needed, strip, and insert into the first Wago."
- },
- 'mains-psu': {
- title: "PSU Live Power",
- action: "Power the 5V Supply.",
- from: "Wago L1 - Port 3",
- to: "PSU 'AC L' Terminal",
- conn: "End A: Strip 11mm, End B: Fork/Ferrule",
- note: "High Voltage."
- },
- 'mains-ssr': {
- title: "Heater Live Feed (via Safety Chain)",
- action: "Feed heater live through the Steam Hi-Limit thermostat into the SSR. (Do not bypass any factory safety device.)",
- from: "Wago L2 (after Power Switch)",
- to: "SSR 'AC In' (Terminal 1)",
- conn: "Mains wire (1.5mm²) via stock safety devices",
- note: "Do NOT bypass the Steam Hi-Limit thermostat."
- },
- 'mains-shelly': {
- title: "Shelly Live Power",
- action: "Power the Shelly Relay.",
- from: "Wago L2 - Port 3",
- to: "Shelly 'L' Terminal",
- conn: "End A: Strip 11mm, End B: Ferrule/Bare",
- note: "The Shelly itself needs power to operate."
- },
- 'shelly-bridge': {
- title: "Shelly Input Bridge",
- action: "Bridge 'L' to 'I' (Input).",
- from: "Shelly 'L'",
- to: "Shelly 'I'",
- conn: "Short jumper wire (Ferrule recommended)",
- note: "This passes mains power into the relay switch contact."
- },
- 'shelly-out-brew': {
- title: "Shelly -> Brew Switch (Input)",
- action: "Feed Shelly guarded power to the physical switch.",
- from: "Shelly 'O' (Output)",
- to: "Brew Switch 'In' Terminal",
- conn: "Ferrule to Female Spade",
- note: "GUIDE: This is a NEW wire. The Brew Switch no longer gets power directly from the main switch."
- },
- 'brew-splice': {
- title: "Brew Switch (Output) -> Split",
- action: "Send manual-kill power to Pump/Valve.",
- from: "Brew Switch 'Out' Terminal",
- to: "Wago 221 (2-way) or Jumper",
- conn: "Female Spade to Wago",
- note: "Turning this switch OFF kills everything downstream (Emergency Stop)."
- },
- 'shelly-dimmer': {
- title: "Switch -> Dimmer",
- action: "Supply guarded power to Pump Dimmer.",
- from: "Brew Output Split",
- to: "Dimmer 'L-In'",
- conn: "Wago to Ferrule/Screw",
- note: "Pump only runs when Shelly is ON AND Switch is ON."
- },
- 'shelly-solenoid': {
- title: "Brew Rail -> Relay (COM)",
- action: "Provide gated live to the solenoid relay.",
- from: "Brew Output Split",
- to: "Relay Module 'COM' (Contact)",
- conn: "Wago to Screw Terminal",
- note: "This keeps Shelly as the gatekeeper. If Shelly is OFF, the relay contact has no live available."
- },
-
- 'relay-solenoid': {
- title: "Relay (NO) -> Solenoid Valve (L)",
- action: "Switch solenoid live electronically.",
- from: "Relay Module 'NO' (Normally Open)",
- to: "Solenoid 'L' Terminal",
- conn: "Screw Terminal to Female Spade",
- note: "When ESP32 activates the relay, COM connects to NO and energizes the solenoid coil."
- },
- 'psu-relay-5v': {
- title: "PSU 5V -> Relay VCC",
- action: "Power the relay module logic.",
- from: "PSU 5V Output",
- to: "Relay Module VCC (5V)",
- conn: "Wago / Screw Terminal",
- note: "Use the same low-voltage 5V rail as the ESP32."
- },
- 'psu-relay-gnd': {
- title: "PSU GND -> Relay GND",
- action: "Common low-voltage ground.",
- from: "PSU GND Output",
- to: "Relay Module GND",
- conn: "Wago / Screw Terminal",
- note: "Relay ground must be common with ESP ground for the control signal to work."
- },
- 'umbilical-relay': {
- title: "ESP32 GPIO -> Relay IN",
- action: "Trigger relay to open solenoid.",
- from: "ESP32 GPIO17 (Relay)",
- to: "Relay Module IN",
- conn: "Umbilical Signal Wire",
- note: "If your relay module needs 5V logic on IN, add a proper driver/level shift."
- },
-
- 'ssr-boiler-live': {
- title: "To Heater (Old Stat Cable)",
- action: "Connect the 'Heater' cable that used to go FROM the Brew Thermostat to the Boiler.",
- from: "SSR 'Load' Output (Terminal 2)",
- to: "Boiler Live Terminal (L)",
- conn: "Existing Spade -> SSR Screw/Fork",
- note: "GUIDE: Identify the second cable from the old thermostat (the one going to the element). Connect it here."
- },
-
- 'dimmer-pump': {
- title: "Pump Load Wire",
- action: "Power to Ulka Pump.",
- from: "Dimmer 'Load' Output",
- to: "Pump Live Terminal",
- conn: "End A: Ferrule/Screw, End B: Female Spade",
- note: "Modulated AC power. This is typically your OLD pump-live wire moved onto the dimmer LOAD."
- },
-
- // NEUTRAL
- 'neutral-switch-wago': {
- title: "Main Neutral Feed",
- action: "Create the Neutral Star Point.",
- from: "Power Switch 'N-Out'",
- to: "Wago 221-413 (N1) - Port 1",
- conn: "End A: Female Spade (6.3mm), End B: Strip 11mm",
- note: "Start of Neutral Chain."
- },
- 'neutral-psu': { title: "PSU Neutral", action: "Connect Neutral to PSU.", from: "Wago N1 - Port 3", to: "PSU 'AC N'", conn: "Strip 11mm -> Fork/Ferrule" },
- 'neutral-shelly': { title: "Shelly Neutral", action: "Connect Neutral to Shelly.", from: "Wago N2 - Port 2", to: "Shelly 'N'", conn: "Strip 11mm -> Ferrule" },
- 'neutral-dimmer': { title: "Dimmer Neutral", action: "Connect Neutral to Dimmer.", from: "Wago N3 - Port 2", to: "Dimmer 'AC N'", conn: "Strip 11mm -> Ferrule/Screw" },
- 'neutral-boiler': { title: "Boiler Return", action: "Return path for Heater.", from: "Wago N4 - Port 2", to: "Boiler Neutral Tab", conn: "Female Spade -> Strip 11mm" },
-'neutral-pump': {
-  title: "Pump Neutral (Stock)",
-  action: "Leave this original neutral wire in place (often routed via the mains filter/fuse area).",
-  from: "Neutral Bus (WAGO N)",
-  to: "Pump Neutral Tab",
-  conn: "Female Spade -> Neutral Bus",
-  note: "Neutral does NOT go through the dimmer."
-},
- 'neutral-solenoid': { title: "Solenoid Return", action: "Return path for Valve.", from: "Wago N5 - Port 3", to: "Solenoid Neutral Tab", conn: "Female Spade -> Strip 11mm" },
-
- // UMBILICAL (LOW VOLTAGE)
- 'umbilical-5v': {
- title: "Umbilical: 5V Power",
- action: "Main power for ESP32.",
- from: "Internal PSU '5V'",
- to: "External ESP '5V/VIN'",
- conn: "Fork/Ferrule -> Dupont/Pin",
- note: "Use 18AWG wire. Length ~80cm."
- },
- 'umbilical-gnd': {
- title: "Umbilical: Ground",
- action: "Common Ground Reference.",
- from: "Internal PSU 'GND'",
- to: "External ESP 'GND'",
- conn: "Fork/Ferrule -> Dupont/Pin",
- note: "Use 18AWG wire. Length ~80cm."
- },
-
- 'internal-gnd-ssr': {
- title: "SSR DC- Return (GND)",
- action: "Provide a solid ground reference for the SSR input so the ESP32 GPIO can source current into SSR DC+.",
- from: "PSU/ESP32 GND (common)",
- to: "SSR DC- (Input -)",
- conn: "LV wire (0.25–0.5mm²)",
- note: "This is low-voltage ground only. Keep separated from mains wiring and route cleanly through the umbilical."
- },
-
- 'umbilical-3v3-dimmer': {
- title: "Umbilical: 3.3V Logic",
- action: "Power for Dimmer Logic (Optocoupler).",
- from: "Ext ESP '3.3V'",
- to: "Int Dimmer 'VCC'",
- conn: "Dupont -> Ferrule/Screw",
- note: "Do NOT use 5V."
- },
- 'umbilical-gnd-dimmer': { title: "Umbilical: Logic Ground", action: "Ground for Dimmer Logic.", from: "Ext ESP 'GND'", to: "Int Dimmer 'GND'", conn: "Dupont -> Ferrule" },
- 'umbilical-ssr': {
- title: "Heater SSR Control (GPIO)",
- action: "Drive SSR input directly from ESP32.",
- from: "ESP32 External Box",
- to: "SSR DC+ (Input +)",
- conn: "Signal wire (LV)",
- note: "SSR must be DC-input and compatible with 3.3V GPIO; keep LV wiring separated from mains."
- },
- 'esp-hx711-3v3': { 
- title: "3.3V → HX711 VCC", 
- action: "Power the HX711 from 3.3V (recommended) unless your board explicitly requires 5V.", 
- from: "ESP32 3.3V", 
- to: "HX711 VCC", 
- conn: "Dupont/Pin header", 
- note: "If your HX711 board is marked 2.6–5.5V it is OK on 3.3V. Keep sensor wiring twisted/shielded." 
- },
- 'esp-hx711-gnd': { 
- title: "GND → HX711 GND", 
- action: "Common ground reference for HX711.", 
- from: "ESP32 GND", 
- to: "HX711 GND", 
- conn: "Dupont/Pin header", 
- note: "Star-ground low voltage inside the external box. Avoid sharing returns with noisy loads." 
- },
-
- 'spi-cs': { title: "SPI CS", action: "Chip-select for MAX31855.", from: "ESP32 CS (GPIO6 in diagram)", to: "MAX31855 CS", conn: "Dupont/Pin header", note: "Keep short; route away from AC dimmer wiring." },
- 'spi-miso': { title: "SPI MISO/DO", action: "Data from MAX31855 to ESP32.", from: "ESP32 MISO (GPIO7)", to: "MAX31855 DO", conn: "Dupont/Pin header", note: "Keep short; avoid running parallel to mains." },
- 'spi-sck': { title: "SPI SCK", action: "Clock line for MAX31855.", from: "ESP32 SCK (GPIO15)", to: "MAX31855 SCK", conn: "Dupont/Pin header", note: "Keep short; avoid running parallel to mains." },
- 'scale-dt': { title: "HX711 DT → ESP32", action: "Scale data line.", from: "HX711 DT", to: "ESP32 GPIO4 (DT)", conn: "Dupont/Pin header", note: "Prefer shielded/twisted pair inside the box for noise immunity." },
- 'scale-sck': { title: "HX711 SCK → ESP32", action: "Scale clock line.", from: "HX711 SCK", to: "ESP32 GPIO5 (SCK)", conn: "Dupont/Pin header", note: "Prefer shielded/twisted pair; keep away from switching supplies." }
-
- };
-
- const META = {
- title: "Gaggia Mod V20 - Enhanced Interactive Diagram",
- badge: "Safety + Modern UI",
- date: "2026-01-24",
- version: "V20-Enhanced",
- notes: [
- "Double safety interlock: Shelly O → Physical Brew Switch → Dimmer/Solenoid.",
- "Neutral star: Wago 221-415 (5-port). Live split: Wago 221-413 (4-port).",
- "NO inline fuse is included in this diagram (per request). Keep factory safety devices intact."
- ]
- };
-
- // Helpers
- const $ = (sel, root=document) => root.querySelector(sel);
- const $$ = (sel, root=document) => Array.from(root.querySelectorAll(sel));
-
- const tooltip = $("#tooltip");
- const modal = $("#modal");
- const modalTitle = $("#modalTitle");
- const modalSub = $("#modalSub");
- const modalContent = $("#modalContent");
- const modalCloseBtn = $("#modalCloseBtn");
-
- function escapeHtml(s) {
- return String(s)
- .replaceAll("&", "&amp;")
- .replaceAll("<", "&lt;")
- .replaceAll(">", "&gt;")
- .replaceAll('"', "&quot;")
- .replaceAll("'", "&#039;");
- }
-
- function openModal(id) {
- let content = "";
- 
- // Check if it's a wire or a component
- const wireD = wireDetails[id];
- const compD = componentDetails[id];
-
- if (wireD) {
- modalTitle.textContent = wireD.title || "Wire Detail";
- modalSub.textContent = "Wire ID: " + id;
-
- const action = wireD.action
- ? `<div style="margin-bottom:10px; font-size:.98rem; line-height:1.4;"><b>Action:</b> ${escapeHtml(wireD.action)}</div>`
- : "";
-
- const rows = [
- ["From", wireD.from],
- ["To", wireD.to],
- ["Connectors", wireD.conn],
- ].filter(r => r[1]);
-
- const table = `
- <table class="meta-table">
- ${rows.map(([k,v]) => `<tr><td class="meta-label">${k}</td><td>${escapeHtml(v)}</td></tr>`).join("")}
- </table>
- `;
- 
- // Add specific "Guide" box if 'note' contains "GUIDE" or just general notes
- const isGuide = (wireD.note || "").includes("GUIDE");
- const guideText = isGuide ? wireD.note : "";
- const guideBox = guideText ? `<div class="guide-box"><div class="guide-title">Installation Guide</div>${escapeHtml(guideText.replace("GUIDE: ",""))}</div>` : "";
- 
- // Regular note (if not a guide)
- const note = (wireD.note && !isGuide) ? `<div class="okcallout"><b>Notes:</b> ${escapeHtml(wireD.note)}</div>` : "";
- 
- const critical = /CRITICAL|lethal|mandatory|danger|earth|mains|230|HV/i.test((wireD.note||"") + " " + (wireD.title||""))
- ? `<div class="callout"><b>Safety:</b> Treat this as safety-critical. Maintain creepage/clearance and keep HV/LV separated.</div>`
- : "";
-
- content = `${action}${table}${guideBox}${note}${critical}`;
-
- } else if (compD) {
- modalTitle.textContent = compD.title || "Component Detail";
- modalSub.textContent = compD.sub || "";
- content = `<div class="guide-box">${compD.guide}</div>`;
- } else {
- return; // No data found
- }
-
- modalContent.innerHTML = content;
- modal.classList.add("open");
- modal.setAttribute("aria-hidden", "false");
- }
-
- function closeModal() {
- modal.classList.remove("open");
- modal.setAttribute("aria-hidden", "true");
- }
-
- // Theme
- const themeBtn = $("#themeBtn");
- function toggleTheme() {
- const root = document.documentElement;
- root.setAttribute("data-theme", root.getAttribute("data-theme") === "dark" ? "light" : "dark");
- }
- themeBtn.addEventListener("click", toggleTheme);
-
- // Pan / Zoom (wheel + pointer + pinch)
- const canvas = $("#canvas");
- const svgEl = $("#svgRoot");
-
- let pzScale = 1;
- let pzX = 0;
- let pzY = 0;
- let isPanning = false;
-
- const pointers = new Map(); // pointerId -> point
- let pinchStartDist = null;
- let pinchStartScale = 1;
- let pinchCenter = null;
-
- function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
- function pzUpdate() { svgEl.style.transform = `translate(${pzX}px, ${pzY}px) scale(${pzScale})`; }
- function resetView() { pzScale = 1; pzX = 0; pzY = 0; pzUpdate(); }
- $("#resetViewBtn").addEventListener("click", resetView);
-
- function isInteractiveTarget(e) {
- return !!(e.target.closest(".controls") || e.target.closest("button") || e.target.closest("input") || e.target.closest(".wire[data-id]") || e.target.closest(".comp-group") || e.target.closest(".modal-card"));
- }
-
- canvas.addEventListener("pointerdown", (e) => {
- if (isInteractiveTarget(e)) return;
- canvas.setPointerCapture(e.pointerId);
- pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
- if (pointers.size === 1) {
- isPanning = true;
- } else if (pointers.size === 2) {
- const pts = Array.from(pointers.values());
- pinchStartDist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
- pinchStartScale = pzScale;
- pinchCenter = { x: (pts[0].x + pts[1].x)/2, y: (pts[0].y + pts[1].y)/2 };
- isPanning = false;
- }
- });
-
- canvas.addEventListener("pointermove", (e) => {
- if (!pointers.has(e.pointerId)) return;
- const prev = pointers.get(e.pointerId);
- pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-
- if (pointers.size === 1 && isPanning) {
- const dx = e.clientX - prev.x;
- const dy = e.clientY - prev.y;
- pzX += dx;
- pzY += dy;
- pzUpdate();
- } else if (pointers.size === 2 && pinchStartDist) {
- const pts = Array.from(pointers.values());
- const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
- const ratio = dist / pinchStartDist;
-
- const rect = canvas.getBoundingClientRect();
- const mx = (pinchCenter.x - rect.left);
- const my = (pinchCenter.y - rect.top);
- const xs = (mx - pzX) / pzScale;
- const ys = (my - pzY) / pzScale;
-
- const next = clamp(pinchStartScale * ratio, 0.5, 4);
- pzX = mx - (xs * next);
- pzY = my - (ys * next);
- pzScale = next;
- pzUpdate();
- }
- });
-
- function endPointer(e) {
- pointers.delete(e.pointerId);
- if (pointers.size < 2) { pinchStartDist = null; pinchCenter = null; }
- if (pointers.size === 0) isPanning = false;
- }
- canvas.addEventListener("pointerup", endPointer);
- canvas.addEventListener("pointercancel", endPointer);
-
- canvas.addEventListener("wheel", (e) => {
- e.preventDefault();
- const rect = canvas.getBoundingClientRect();
- const mx = (e.clientX - rect.left);
- const my = (e.clientY - rect.top);
-
- const xs = (mx - pzX) / pzScale;
- const ys = (my - pzY) / pzScale;
-
- const delta = -Math.sign(e.deltaY);
- const next = clamp(pzScale + (delta * 0.1), 0.5, 4);
-
- pzX = mx - (xs * next);
- pzY = my - (ys * next);
- pzScale = next;
- pzUpdate();
- }, { passive: false });
-
- pzUpdate();
-
- // Wire group toggles
- $$(".viz-toggle").forEach(chk => {
- chk.addEventListener("change", () => {
- const cls = chk.dataset.target;
- $$(".harness." + cls, svgEl).forEach(g => { g.style.display = chk.checked ? "" : "none"; });
- });
- });
-
- // Wire listeners
- $$(".wire[data-id]", svgEl).forEach(w => {
- w.addEventListener("mouseenter", () => {
- const id = w.dataset.id;
- const d = wireDetails[id];
- if (!d) return;
- tooltip.style.opacity = 1;
- tooltip.textContent = `${d.title} · ${id}`;
- });
- w.addEventListener("mousemove", (e) => {
- tooltip.style.left = (e.clientX + 12) + "px";
- tooltip.style.top = (e.clientY + 12) + "px";
- });
- w.addEventListener("mouseleave", () => { tooltip.style.opacity = 0; });
- w.addEventListener("click", (e) => { e.stopPropagation(); openModal(w.dataset.id); });
- });
-
- // Component listeners (NEW)
- $$(".comp-group", svgEl).forEach(c => {
- c.addEventListener("mouseenter", () => {
- const id = c.dataset.id;
- const d = componentDetails[id];
- if (!d) return;
- tooltip.style.opacity = 1;
- tooltip.textContent = `${d.title} (Click for Guide)`;
- });
- c.addEventListener("mousemove", (e) => {
- tooltip.style.left = (e.clientX + 12) + "px";
- tooltip.style.top = (e.clientY + 12) + "px";
- });
- c.addEventListener("mouseleave", () => { tooltip.style.opacity = 0; });
- c.addEventListener("click", (e) => { e.stopPropagation(); openModal(c.dataset.id); });
- });
-
-
- modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
- modalCloseBtn.addEventListener("click", closeModal);
-
- // Search / Focus
- const wireSearch = $("#wireSearch");
- const wireSearchBtn = $("#wireSearchBtn");
-
- function focusWire(id) {
- const el = svgEl.querySelector(`[data-id="${CSS.escape(id)}"]`);
- if (!el) {
- tooltip.style.opacity = 1;
- tooltip.textContent = `Wire not found: ${id}`;
- tooltip.style.left = "18px";
- tooltip.style.top = "70px";
- setTimeout(() => tooltip.style.opacity = 0, 1200);
- return;
- }
-
- const bbox = el.getBBox();
- const rect = canvas.getBoundingClientRect();
- const pad = 220;
- const targetScale = clamp(Math.min(4, Math.max(1, Math.min(rect.width / (bbox.width + pad), rect.height / (bbox.height + pad)))), 1, 4);
-
- const cx = bbox.x + bbox.width/2;
- const cy = bbox.y + bbox.height/2;
-
- pzScale = targetScale;
- pzX = (rect.width/2) - (cx * pzScale);
- pzY = (rect.height/2) - (cy * pzScale);
- pzUpdate();
-
- if (el.classList.contains("wire")) {
- el.classList.add("focus");
- setTimeout(() => el.classList.remove("focus"), 1400);
- } else if (el.classList.contains("comp-group")) {
- // Pulse effect for components
- const body = el.querySelector(".comp-body");
- if(body) {
- body.style.stroke = "var(--accent)";
- body.style.strokeWidth = "6px";
- setTimeout(() => { body.style.stroke = ""; body.style.strokeWidth = ""; }, 1400);
- }
- }
- }
-
- wireSearchBtn.addEventListener("click", () => {
- const id = wireSearch.value.trim();
- if (id) focusWire(id);
- });
- wireSearch.addEventListener("keydown", (e) => {
- if (e.key === "Enter") {
- const id = wireSearch.value.trim();
- if (id) focusWire(id);
- }
- });
-
- // Export JSON
- $("#exportBtn").addEventListener("click", () => {
- const payload = { meta: META, wireDetails, componentDetails };
- const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
- const a = document.createElement("a");
- a.href = URL.createObjectURL(blob);
- a.download = "gaggia_mod_v20_enhanced_wire_db.json";
- document.body.appendChild(a);
- a.click();
- URL.revokeObjectURL(a.href);
- a.remove();
- });
-
- // Simulation
- let simPower = false;
- 
- $("#traceBtn").addEventListener("click", () => {
- // If your diagram doesn't set .active anywhere, fall back to tracing all wires with IDs.
- const active = $$(".wire.active[data-id]", svgEl);
- const targets = active.length ? active : $$(".wire[data-id]", svgEl);
-
- // Trace only wires that are currently visible (their harness group isn't hidden)
- const visible = targets.filter(w => {
- const h = w.closest("g.harness");
- return !h || h.style.display !== "none";
- });
-
- visible.forEach(w => w.classList.add("flow"));
- setTimeout(() => visible.forEach(w => w.classList.remove("flow")), 2200);
- });
-
- window.addEventListener("keydown", (e) => {
- if (e.key === "Escape") closeModal();
- if (e.key === "r" || e.key === "R") resetView();
- if (e.key === "t" || e.key === "T") toggleTheme();
- });
- </script>
+
+<header>
+    <div>
+        <h1>Gaggia Mod Wiring</h1>
+        <span class="subtitle">Click any wire for a connection guide</span>
+    </div>
+    <button id="themeToggle" style="width:auto; margin:0;">Dark Mode</button>
+</header>
+
+<div class="container">
+    <aside class="controls">
+        <div class="control-group">
+            <h3>New Harnesses</h3>
+            <label class="toggle-row">
+                <input type="checkbox" class="harness-toggle" data-target="h-pwr" checked>
+                <span class="legend-marker" style="background:#e91e63"></span> 5V Power
+            </label>
+            <label class="toggle-row">
+                <input type="checkbox" class="harness-toggle" data-target="h-io" checked>
+                <span class="legend-marker" style="background:#2196F3"></span> Signal Lines
+            </label>
+            <label class="toggle-row">
+                <input type="checkbox" class="harness-toggle" data-target="h-sensors" checked>
+                <span class="legend-marker" style="background:#9c27b0"></span> Sensors (TC/Scale)
+            </label>
+            <label class="toggle-row">
+                <input type="checkbox" class="harness-toggle" data-target="h-mains">
+                <span class="legend-marker" style="background:#d32f2f"></span> New Mains Wires ⚠️
+            </label>
+        </div>
+
+        <div class="control-group">
+            <h3>Layout Notes</h3>
+            <div style="font-size:0.8rem; color:var(--text-sub);">
+                <strong>Expansion Hub:</strong> Contains MAX31855 & HX711.<br>
+                <strong>Mains Tap:</strong> Piggyback on Main Switch Output.<br>
+                <strong>Isolation:</strong> HV Top-Right, LV Bottom-Left.<br>
+                <strong>Interactive:</strong> Click wires for steps.
+            </div>
+        </div>
+
+        <button class="primary" id="btnPlay">▶ Visualize Path</button>
+        <button class="danger" id="btnStop" style="display:none;">■ Stop</button>
+    </aside>
+
+    <div class="canvas-wrapper" id="canvasContainer">
+        <svg viewBox="0 0 1300 1000" id="circuitSvg">
+            <!-- Background Grid/Zones -->
+            <line x1="0" y1="450" x2="1300" y2="450" class="zone-divider" />
+            <text x="50" y="440" class="zone-label">High Voltage (Mains Taps & SSR)</text>
+            <text x="50" y="480" class="zone-label">Low Voltage (ESP32 & DC Hub)</text>
+
+            <!-- ===================== COMPONENTS ===================== -->
+
+            <!-- 1. GAGGIA MAIN SWITCH (The Source) -->
+            <g transform="translate(100, 150)">
+                <rect class="comp-body" width="100" height="120" rx="4" stroke-width="3" />
+                <text x="50" y="30" class="comp-header">Gaggia Switch</text>
+                <text x="50" y="45" class="comp-sub">Back View</text>
+                <text x="50" y="110" class="comp-sub" fill="#d32f2f">EXISTING</text>
+                
+                <!-- Output Terminals (We tap here) -->
+                <rect x="95" y="40" width="10" height="10" fill="#d32f2f"/> <text x="85" y="50" text-anchor="end" class="pin-txt">L Out</text>
+                <rect x="95" y="80" width="10" height="10" fill="#1976D2"/> <text x="85" y="90" text-anchor="end" class="pin-txt">N Out</text>
+            </g>
+
+            <!-- 2. PSU (Power Supply) -->
+            <g transform="translate(350, 50)">
+                <rect class="comp-body" width="120" height="90" rx="4" />
+                <text x="60" y="25" class="comp-header">PSU</text>
+                <text x="60" y="40" class="comp-sub">MeanWell RS-15-5</text>
+                <!-- AC Input -->
+                <circle cx="10" cy="60" r="4" fill="#d32f2f"/> <text x="20" y="65" class="pin-txt">AC L</text>
+                <circle cx="10" cy="80" r="4" fill="#1976D2"/> <text x="20" y="85" class="pin-txt">AC N</text>
+                <!-- DC Output -->
+                <circle cx="110" cy="60" r="4"/> <text x="100" y="65" text-anchor="end" class="pin-txt">+5V</text>
+                <circle cx="110" cy="80" r="4"/> <text x="100" y="85" text-anchor="end" class="pin-txt">GND</text>
+            </g>
+
+            <!-- 3. SHELLY 1 MINI G3 (Safety Gate) -->
+            <g transform="translate(350, 250)">
+                <rect class="comp-body" width="120" height="100" rx="8" stroke="#2196F3" stroke-width="3"/>
+                <text x="60" y="30" class="comp-header">Shelly 1 Mini</text>
+                <text x="60" y="45" class="comp-sub">Safety Relay</text>
+                
+                <circle cx="10" cy="40" r="4"/> <text x="20" y="45" class="pin-txt">Sw (I)</text>
+                <circle cx="10" cy="60" r="4" fill="#d32f2f"/> <text x="20" y="65" class="pin-txt">L In</text>
+                <circle cx="10" cy="80" r="4" fill="#1976D2"/> <text x="20" y="85" class="pin-txt">N In</text>
+                
+                <rect x="115" y="35" width="10" height="10" fill="#d32f2f"/> <text x="110" y="45" text-anchor="end" class="pin-txt">L Out (O)</text>
+            </g>
+
+            <!-- 4. AC LOADS (SSR & DIMMER) -->
+            <g transform="translate(600, 50)">
+                <!-- SSR -->
+                <g>
+                    <rect class="comp-body" width="100" height="100" rx="4"/>
+                    <text x="50" y="30" class="comp-header">SSR</text>
+                    <text x="50" y="45" class="comp-sub">Boiler Control</text>
+                    <circle cx="10" cy="70" r="4" fill="#d32f2f"/> <text x="20" y="75" class="pin-txt">L In</text>
+                    <rect x="95" y="70" width="10" height="10" fill="#d32f2f"/> <text x="90" y="75" text-anchor="end" class="pin-txt">To Boiler</text>
+                    <!-- DC Side -->
+                    <circle cx="30" cy="100" r="3"/> <text x="30" y="90" text-anchor="middle" class="pin-txt">DC+</text>
+                    <circle cx="70" cy="100" r="3"/> <text x="70" y="90" text-anchor="middle" class="pin-txt">DC-</text>
+                </g>
+
+                <!-- Dimmer -->
+                <g transform="translate(0, 200)">
+                    <rect class="comp-body" width="100" height="100" rx="4"/>
+                    <text x="50" y="30" class="comp-header">Dimmer</text>
+                    <text x="50" y="45" class="comp-sub">Pump Control</text>
+                    <circle cx="10" cy="60" r="4" fill="#d32f2f"/> <text x="20" y="65" class="pin-txt">L In</text>
+                    <circle cx="10" cy="80" r="4" fill="#1976D2"/> <text x="20" y="85" class="pin-txt">N In</text>
+                    <rect x="95" y="60" width="10" height="10" fill="#d32f2f"/> <text x="90" y="65" text-anchor="end" class="pin-txt">To Pump</text>
+                    <!-- Logic Side -->
+                    <circle cx="20" cy="100" r="3"/> <text x="20" y="90" class="pin-txt" text-anchor="middle">VCC</text>
+                    <circle cx="40" cy="100" r="3"/> <text x="40" y="90" class="pin-txt" text-anchor="middle">GND</text>
+                    <circle cx="60" cy="100" r="3"/> <text x="60" y="90" class="pin-txt" text-anchor="middle">ZC</text>
+                    <circle cx="80" cy="100" r="3"/> <text x="80" y="90" class="pin-txt" text-anchor="middle">PSM</text>
+                </g>
+            </g>
+
+            <!-- 5. EXISTING HARDWARE (Destinations) -->
+            <g transform="translate(850, 50)">
+                 <rect class="comp-body" width="100" height="80" rx="2" style="stroke-dasharray:4"/>
+                 <text x="50" y="40" class="comp-header">Boiler</text>
+                 <circle cx="10" cy="70" r="4"/> <text x="20" y="75" class="pin-txt">Live Terminal</text>
+            </g>
+            <g transform="translate(850, 250)">
+                 <rect class="comp-body" width="100" height="80" rx="2" style="stroke-dasharray:4"/>
+                 <text x="50" y="40" class="comp-header">Pump</text>
+                 <circle cx="10" cy="60" r="4"/> <text x="20" y="65" class="pin-txt">Live Terminal</text>
+            </g>
+
+
+            <!-- 6. EXPANSION HUB (Bottom Right) -->
+            <g transform="translate(600, 550)">
+                <rect class="hub-zone" width="450" height="250" rx="10" />
+                <text x="225" y="30" class="comp-header" fill="#2196F3">EXPANSION HUB PCB</text>
+                
+                <!-- Terminal Block on Hub -->
+                <g transform="translate(20, 60)">
+                    <rect class="comp-body" width="60" height="150" rx="2" />
+                    <text x="30" y="20" class="comp-sub" text-anchor="middle">Power</text>
+                    <circle cx="10" cy="40" r="3"/> <text x="20" y="45" class="pin-txt">5V In</text>
+                    <circle cx="10" cy="60" r="3"/> <text x="20" y="65" class="pin-txt">GND In</text>
+                    <circle cx="10" cy="90" r="3"/> <text x="20" y="95" class="pin-txt">5V Out</text>
+                    <circle cx="10" cy="110" r="3"/> <text x="20" y="115" class="pin-txt">GND Out</text>
+                </g>
+
+                <!-- MAX31855 (Inside Hub) -->
+                <g transform="translate(150, 60)">
+                    <rect class="comp-body" width="100" height="80" rx="4"/>
+                    <text x="50" y="25" class="comp-header">MAX31855</text>
+                    <circle cx="0" cy="40" r="3"/> <text x="10" y="45" class="pin-txt">CS</text>
+                    <circle cx="0" cy="50" r="3"/> <text x="10" y="55" class="pin-txt">DO</text>
+                    <circle cx="0" cy="60" r="3"/> <text x="10" y="65" class="pin-txt">SCK</text>
+                    <!-- TC Connector -->
+                    <rect x="90" y="30" width="10" height="20" fill="#9c27b0"/>
+                </g>
+
+                <!-- HX711 (Inside Hub) -->
+                <g transform="translate(150, 160)">
+                    <rect class="comp-body" width="100" height="80" rx="4"/>
+                    <text x="50" y="25" class="comp-header">HX711</text>
+                    <circle cx="0" cy="40" r="3"/> <text x="10" y="45" class="pin-txt">DT</text>
+                    <circle cx="0" cy="50" r="3"/> <text x="10" y="55" class="pin-txt">SCK</text>
+                    <!-- Scale Connector -->
+                    <rect x="90" y="30" width="10" height="20" fill="#9c27b0"/>
+                </g>
+            </g>
+
+
+            <!-- 7. ESP32 (Bottom Left) -->
+            <g transform="translate(50, 550)">
+                <rect class="comp-body" width="200" height="300" rx="10"/>
+                <text x="100" y="30" class="comp-header">ESP32-S3</text>
+                
+                <!-- 4P Power -->
+                <g transform="translate(200, 50)">
+                    <text x="-10" y="0" text-anchor="end" font-weight="bold" font-size="11">PWR</text>
+                    <circle cx="0" cy="10" r="3" fill="#e91e63"/>
+                    <circle cx="0" cy="20" r="3" fill="#455a64"/>
+                </g>
+
+                <!-- 8P IO -->
+                <g transform="translate(200, 110)">
+                    <text x="-10" y="0" text-anchor="end" font-weight="bold" font-size="11">IO (8P)</text>
+                    <circle cx="0" cy="10" r="3"/> <text x="-10" y="13" text-anchor="end" class="pin-txt">CS</text>
+                    <circle cx="0" cy="20" r="3"/> <text x="-10" y="23" text-anchor="end" class="pin-txt">DO</text>
+                    <circle cx="0" cy="30" r="3"/> <text x="-10" y="33" text-anchor="end" class="pin-txt">SCK</text>
+                    <circle cx="0" cy="40" r="3"/> <text x="-10" y="43" text-anchor="end" class="pin-txt">PSM</text>
+                    <circle cx="0" cy="50" r="3"/> <text x="-10" y="53" text-anchor="end" class="pin-txt">SSR</text>
+                    <circle cx="0" cy="60" r="3"/> <text x="-10" y="63" text-anchor="end" class="pin-txt">ZC</text>
+                </g>
+
+                <!-- 4P Scale -->
+                <g transform="translate(200, 230)">
+                    <text x="-10" y="0" text-anchor="end" font-weight="bold" font-size="11">Scale</text>
+                    <circle cx="0" cy="10" r="3"/> <text x="-10" y="13" text-anchor="end" class="pin-txt">DT</text>
+                    <circle cx="0" cy="20" r="3"/> <text x="-10" y="23" text-anchor="end" class="pin-txt">SCK</text>
+                </g>
+            </g>
+
+            <!-- ===================== WIRING (MANHATTAN STYLE) ===================== -->
+
+            <!-- MAINS (High Voltage) - Strict Non-Overlap -->
+            <g class="harness h-mains">
+                <!-- 1. PIGGYBACKS FROM MAIN SWITCH -->
+                <!-- Live to PSU -->
+                <path d="M 210 190 L 250 190 L 250 110 L 340 110" class="wire bus-mains-L wire-mains" data-connector="Piggyback Spade" data-info="Piggyback: Switch L -> PSU L"/>
+                <!-- Neutral to PSU -->
+                <path d="M 210 230 L 260 230 L 260 130 L 340 130" class="wire bus-mains-N wire-mains" data-connector="Piggyback Spade" data-info="Piggyback: Switch N -> PSU N"/>
+
+                <!-- Live to Shelly -->
+                <path d="M 210 190 L 250 190 L 250 290 L 340 290" class="wire bus-mains-L wire-mains" data-connector="Piggyback Spade" data-info="Piggyback: Switch L -> Shelly L (Power)"/>
+                <!-- Jumper L to Shelly I -->
+                <path d="M 330 290 L 330 270 L 340 270" class="wire bus-mains-L wire-mains" data-connector="Short Wire Jumper" data-info="Jumper: Shelly L -> Shelly I"/>
+                
+                <!-- Neutral to Shelly -->
+                <path d="M 210 230 L 260 230 L 260 330 L 340 330" class="wire bus-mains-N wire-mains" data-connector="Piggyback Spade" data-info="Piggyback: Switch N -> Shelly N"/>
+
+                <!-- 2. SHELLY OUTPUT TO CONTROLLERS -->
+                <path d="M 480 290 L 520 290 L 520 120 L 590 120" class="wire bus-mains-L wire-mains" data-connector="Screw Terminal" data-info="Shelly Out -> SSR Input (Gated L)"/>
+                <path d="M 480 290 L 520 290 L 520 260 L 590 260" class="wire bus-mains-L wire-mains" data-connector="Screw Terminal" data-info="Shelly Out -> Dimmer Input (Gated L)"/>
+
+                <!-- 3. NEUTRAL TO DIMMER (Dimmer needs N, SSR does not) -->
+                <path d="M 330 130 L 290 130 L 290 400 L 550 400 L 550 280 L 590 280" class="wire bus-mains-N wire-mains" data-connector="Screw Terminal" data-info="Neutral -> Dimmer N"/>
+
+                <!-- 4. CONTROLLER OUTPUTS TO HARDWARE -->
+                <path d="M 710 120 L 840 120" class="wire bus-mains-L wire-mains" style="stroke:#d32f2f" data-connector="Spade Connector" data-info="SSR Load -> Boiler Live (Replaces Stock)"/>
+                <path d="M 710 260 L 840 260" class="wire bus-mains-L wire-mains" style="stroke:#d32f2f" data-connector="Spade Connector" data-info="Dimmer Load -> Pump Live (Replaces Stock)"/>
+            </g>
+
+            <!-- LOW VOLTAGE DC POWER -->
+            <g class="harness h-pwr">
+                <!-- PSU to Hub Terminal -->
+                <path d="M 480 110 L 500 110 L 500 500 L 600 500 L 600 650 L 620 650" class="wire bus-5v" data-connector="Screw Terminal / Ferrule" data-info="5V PSU -> Hub In"/>
+                <path d="M 480 130 L 510 130 L 510 510 L 610 510 L 610 670 L 620 670" class="wire bus-gnd" data-connector="Screw Terminal / Ferrule" data-info="GND PSU -> Hub In"/>
+
+                <!-- Hub Out to ESP32 -->
+                <path d="M 620 700 L 550 700 L 550 600 L 260 600" class="wire bus-5v" data-connector="JST-1.25 4P" data-info="Hub 5V -> ESP32 5V"/>
+                <path d="M 620 720 L 560 720 L 560 610 L 260 610" class="wire bus-gnd" data-connector="JST-1.25 4P" data-info="Hub GND -> ESP32 GND"/>
+                
+                <!-- NEW: DIMMER VCC (Required for logic) -->
+                <path d="M 620 650 L 630 650 L 630 300 L 620 300" class="wire bus-5v" data-connector="Dupont / Header" data-info="5V -> Dimmer VCC"/>
+            </g>
+
+            <!-- SIGNALS (Manhattan Routing) -->
+            <g class="harness h-io">
+                <!-- SSR Control -->
+                <path d="M 260 700 L 400 700 L 400 420 L 630 420 L 630 150" class="wire bus-sig" data-connector="Screw Terminal" data-info="ESP SSR -> SSR DC+"/>
+                <path d="M 260 610 L 280 610 L 280 750 L 570 750 L 570 430 L 670 430 L 670 150" class="wire bus-gnd" data-connector="Screw Terminal" data-info="GND -> SSR DC-"/>
+
+                <!-- Dimmer Signals -->
+                <path d="M 260 690 L 390 690 L 390 350 L 680 350 L 680 300" class="wire bus-sig" data-connector="Dupont / Header" data-info="ESP PSM -> Dimmer PSM"/>
+                <path d="M 260 710 L 410 710 L 410 340 L 660 340 L 660 300" class="wire bus-sig" data-connector="Dupont / Header" data-info="ESP ZC -> Dimmer ZC"/>
+                <path d="M 260 610 L 280 610 L 280 750 L 570 750 L 570 330 L 640 330 L 640 300" class="wire bus-gnd" data-connector="Dupont / Header" data-info="GND -> Dimmer GND"/>
+
+                <!-- Hub Signals (Temp & Scale) -->
+                <!-- CS -->
+                <path d="M 260 660 L 450 660 L 450 640 L 740 640" class="wire bus-sig" data-connector="JST 8P" data-info="ESP CS -> MAX CS"/>
+                <!-- DO (MISO) -->
+                <path d="M 260 670 L 440 670 L 440 650 L 740 650" class="wire bus-sig" data-connector="JST 8P" data-info="ESP DO -> MAX DO"/>
+                <!-- SCK (Shared?) -->
+                <path d="M 260 680 L 430 680 L 430 660 L 740 660" class="wire bus-sig" data-connector="JST 8P" data-info="ESP SCK -> MAX SCK"/>
+
+                <!-- Scale DT -->
+                <path d="M 260 780 L 420 780 L 420 750 L 740 750" class="wire bus-sig" data-connector="JST 4P" data-info="ESP DT -> HX711 DT"/>
+                <!-- Scale SCK -->
+                <path d="M 260 790 L 430 790 L 430 760 L 740 760" class="wire bus-sig" data-connector="JST 4P" data-info="ESP SCK -> HX711 SCK"/>
+            </g>
+
+            <!-- SENSORS -->
+            <g class="harness h-sensors">
+                <path d="M 860 630 L 950 630" class="wire bus-sig" style="stroke:#9c27b0; stroke-width:4" data-connector="Screw Terminal" data-info="Thermocouple Probe"/>
+                <path d="M 860 740 L 950 740" class="wire bus-sig" style="stroke:#9c27b0; stroke-width:4" data-connector="Soldered / Terminal" data-info="Load Cell Wires"/>
+            </g>
+
+        </svg>
+
+        <div id="tooltip">
+            <strong id="tt-title"></strong>
+            <span id="tt-conn"></span>
+            <div class="hint">(Click for Guide)</div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Overlay -->
+<div class="modal-overlay" id="guideModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="mTitle">Guide</h2>
+            <button class="modal-close" id="mClose">×</button>
+        </div>
+        <div class="modal-body" id="mBody">
+            <!-- Dynamic Content -->
+        </div>
+    </div>
+</div>
+
+<script>
+    const state = { active: ['h-pwr', 'h-io', 'h-sensors', 'h-mains'], animating: false, timer: null };
+    const tooltip = document.getElementById('tooltip');
+    const ttTitle = document.getElementById('tt-title');
+    const ttConn = document.getElementById('tt-conn');
+    const toggles = document.querySelectorAll('.harness-toggle');
+    const btnPlay = document.getElementById('btnPlay');
+    const btnStop = document.getElementById('btnStop');
+    
+    // Modal Elements
+    const modal = document.getElementById('guideModal');
+    const mTitle = document.getElementById('mTitle');
+    const mBody = document.getElementById('mBody');
+    const mClose = document.getElementById('mClose');
+
+    // Guide Database
+    const guides = {
+        'mains_piggyback': {
+            title: "Mains Switch Piggyback",
+            steps: [
+                "Unplug the espresso machine from the wall.",
+                "Locate the main power switch on the back/side.",
+                "Identify the existing output spade terminal (usually carrying a wire to the boiler).",
+                "Remove the existing wire.",
+                "Crimp a 'Piggyback Spade' (2-in-1 adapter) onto your NEW wire (leading to the PSU/Shelly).",
+                "Push the Piggyback onto the switch terminal.",
+                "Reconnect the original stock wire onto the Piggyback's tab."
+            ]
+        },
+        'screw_terminal_hv': {
+            title: "High Voltage Screw Terminal",
+            steps: [
+                "Strip about 6-7mm of insulation from the wire.",
+                "Twist the copper strands tightly to prevent fraying.",
+                "Loosen the terminal screw on the component (PSU/Shelly/SSR).",
+                "Insert the wire fully. Ensure NO bare copper is visible outside the housing.",
+                "Tighten the screw firmly.",
+                "Perform a 'tug test': Pull gently on the wire to ensure it doesn't come loose."
+            ]
+        },
+        'spade_connector': {
+            title: "Spade (Faston) Connector",
+            steps: [
+                "Strip the wire end.",
+                "Insert into a 6.3mm Insulated Spade Connector.",
+                "Crimp firmly using a ratcheting crimp tool.",
+                "Push the connector onto the component tab (SSR/Pump/Boiler) until it seats securely.",
+                "Ensure the insulation sleeve covers the metal connection completely."
+            ]
+        },
+        'jst_connector': {
+            title: "JST-1.25 Micro Connector",
+            steps: [
+                "These connectors are very small and fragile.",
+                "It is highly recommended to use pre-crimped pigtails and solder them to your wires.",
+                "If crimping: Use a specialized micro-crimping tool.",
+                "Verify Polarity: Check your ESP32 board pinout. Red is usually 5V, Black is GND.",
+                "Align the connector carefully and push until it clicks. Do NOT force it."
+            ]
+        },
+        'screw_terminal_lv': {
+            title: "Low Voltage Terminal (Ferrule)",
+            steps: [
+                "Strip 5mm of insulation.",
+                "Recommended: Crimp a wire ferrule onto the end for a clean connection.",
+                "Insert into the PCB terminal block.",
+                "Tighten the screw.",
+                "Ensure no stray wire strands are touching adjacent terminals (this causes shorts!)."
+            ]
+        },
+        'dupont_header': {
+            title: "Dupont / Pin Header",
+            steps: [
+                "Use Female Dupont jumper wires.",
+                "Slide the connector onto the pin header.",
+                "If the connection feels loose, secure it with a small dab of hot glue or electrical tape to prevent vibration from shaking it loose."
+            ]
+        }
+    };
+
+    function getGuideKey(wire) {
+        const connector = (wire.getAttribute('data-connector') || "").toLowerCase();
+        const isMains = wire.classList.contains('wire-mains') || wire.closest('.h-mains');
+
+        if (connector.includes('piggyback')) return 'mains_piggyback';
+        if (connector.includes('jst')) return 'jst_connector';
+        if (connector.includes('spade')) return 'spade_connector';
+        if (connector.includes('dupont') || connector.includes('header')) return 'dupont_header';
+        
+        if (isMains) return 'screw_terminal_hv';
+        return 'screw_terminal_lv'; // Default for DC
+    }
+
+    function openModal(wire) {
+        const key = getGuideKey(wire);
+        const guide = guides[key];
+
+        if (!guide) return;
+
+        mTitle.textContent = guide.title;
+        mBody.innerHTML = guide.steps.map((step, i) => 
+            `<div class="modal-step"><span class="step-num">${i+1}.</span><span>${step}</span></div>`
+        ).join('');
+        
+        modal.classList.add('open');
+    }
+
+    function closeModal() {
+        modal.classList.remove('open');
+    }
+
+    function init() {
+        toggles.forEach(t => t.addEventListener('change', updateVisibility));
+        
+        document.querySelectorAll('.wire').forEach(w => {
+            // Hover Tooltip
+            w.addEventListener('mouseenter', e => {
+                ttTitle.textContent = w.getAttribute('data-info');
+                ttConn.textContent = w.getAttribute('data-connector') || 'Direct Connection';
+                tooltip.style.opacity = 1;
+                moveTooltip(e);
+            });
+            w.addEventListener('mousemove', moveTooltip);
+            w.addEventListener('mouseleave', () => tooltip.style.opacity = 0);
+            
+            // Click Modal
+            w.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openModal(w);
+            });
+        });
+
+        // Modal Events
+        mClose.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Theme
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+        });
+
+        btnPlay.addEventListener('click', playSequence);
+        btnStop.addEventListener('click', stopSequence);
+        updateVisibility();
+    }
+
+    function moveTooltip(e) {
+        let x = e.clientX + 15, y = e.clientY + 15;
+        if (x > window.innerWidth - 200) x = e.clientX - 210;
+        if (y > window.innerHeight - 80) y = e.clientY - 90;
+        tooltip.style.left = x + 'px';
+        tooltip.style.top = y + 'px';
+    }
+
+    function updateVisibility() {
+        const active = Array.from(toggles).filter(t => t.checked).map(t => t.dataset.target);
+        document.querySelectorAll('.harness').forEach(h => {
+            const isVisible = active.some(c => h.classList.contains(c));
+            h.querySelectorAll('.wire').forEach(w => {
+                if(isVisible) w.classList.add('visible');
+                else w.classList.remove('visible');
+            });
+        });
+    }
+
+    window.setAll = (val) => {
+        toggles.forEach(t => { t.checked = val; });
+        updateVisibility();
+    }
+
+    function playSequence() {
+        if(state.animating) return;
+        state.animating = true;
+        btnPlay.style.display = 'none';
+        btnStop.style.display = 'inline-block';
+        setAll(false);
+        
+        const sequence = ['h-mains', 'h-pwr', 'h-io', 'h-sensors'];
+        let idx = 0;
+
+        const run = () => {
+            if(idx >= sequence.length) { stopSequence(); return; }
+            const cls = sequence[idx];
+            const check = document.querySelector(`.harness-toggle[data-target="${cls}"]`);
+            if(check) { check.checked = true; updateVisibility(); }
+            document.querySelectorAll(`.${cls} .wire`).forEach(w => w.classList.add('active-anim'));
+            idx++;
+        };
+        run();
+        state.timer = setInterval(run, 1500);
+    }
+
+    function stopSequence() {
+        state.animating = false;
+        clearInterval(state.timer);
+        btnPlay.style.display = 'inline-block';
+        btnStop.style.display = 'none';
+        document.querySelectorAll('.active-anim').forEach(w => w.classList.remove('active-anim'));
+        setAll(true);
+    }
+
+    init();
+</script>
 </body>
 </html>
