@@ -39,21 +39,9 @@ The result is an espresso machine that behaves like a commercial unit — repeat
 
 ## Photos
 
-> Add your photos to a `docs/assets/` folder in the repo, then the images below will render automatically on GitHub.
-
-**Suggested structure:**
-```
-FluxPresso/
-├── docs/
-│   └── assets/
-│       ├── ui-screen.jpg        ← touchscreen UI (photo 1)
-│       ├── rear-panel.jpg       ← back of machine, ESP32 + enclosure (photo 2)
-│       └── load-cells.jpg       ← quad load cell array under drip tray (photo 3)
-```
-
 | Touchscreen UI | Rear Panel | Load Cell Array |
 |:---:|:---:|:---:|
-| ![Touchscreen UI showing live temp, yield and brew controls](docs/assets/ui-screen.jpg) | ![Rear panel with Waveshare ESP32-S3 and custom HV enclosure](docs/assets/rear-panel.jpg) | ![4-corner quad load cell array](docs/assets/load-cells.jpg) |
+| ![Touchscreen UI showing live temp, yield and brew controls](docs/ui-screen.jpg) | ![Rear panel with Waveshare ESP32-S3 and custom HV enclosure](docs/rear-panel.jpg) | ![4-corner quad load cell array](docs/load-cells.jpg) |
 | Live temp, yield & brew controls | Waveshare ESP32-S3 + custom HV enclosure | 4-corner Wheatstone bridge scale |
 
 ---
