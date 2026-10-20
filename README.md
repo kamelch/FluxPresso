@@ -1,4 +1,4 @@
-# FluxPresso — ESP32-S3 Espresso Controller
+# FluxPresso Espresso Controller
 
 > **Complete hardware and firmware overhaul of a Gaggia Classic.**  
 > Replaces analog thermostats and mechanical controls with a dual-PID embedded system running on a Waveshare ESP32-S3 module, featuring real-time gravimetric shot control, pressure profiling, WiFi telemetry, and a safety-critical architecture borrowed from industrial automation.
@@ -218,7 +218,7 @@ The LVGL 8.3 interface (photo 1) shows:
 
 The full wiring diagram with HV/LV isolation zones, component placement, and annotated connections is available as an interactive HTML page:
 
-**[→ Open Wiring Guide](https://kamelch.github.io/FluxPresso/Diagram_index.html)**
+**[→ Open Wiring Guide](Diagram_index.html)**
 
 ---
 
@@ -239,3 +239,11 @@ Design decisions made specifically for safety:
 ## License
 
 Apache 2.0 — see `LICENSE`.
+
+## Repository purpose and workflow
+
+ESP32-S3 firmware, wiring guide, and documentation for a Gaggia espresso controller.
+
+Canonical repository: https://github.com/kamelch/fluxpresso-espresso-controller
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for commit, branch, validation, and generated-file conventions.
