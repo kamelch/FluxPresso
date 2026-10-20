@@ -174,8 +174,21 @@ This is why `WDT_KICK` must appear in every time-critical task. Missing it under
 
 ### Flash
 ```bash
-pio run -e esp32-s3-devkitc-1 -t upload
+cd Firmware
+pio run -e waveshare-s3-35b
+pio run -e waveshare-s3-35b -t upload
 ```
+
+### Host unit tests
+
+From `Firmware/`, with PlatformIO and a native C++ toolchain installed:
+
+```bash
+pio test -e native
+```
+
+The environment names above are defined in [Firmware/platformio.ini](Firmware/platformio.ini).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for repository conventions.
 
 ### Calibration
 1. Set `SCALE_CALIBRATION` in `app_config.h` with a known reference weight (e.g., 100g calibration mass)
